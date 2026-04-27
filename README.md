@@ -121,6 +121,46 @@ skills init -g
 | `scope` | `"project" \| "global"` | `"project"` | 安装范围 |
 | `sources` | `SourceConfig[]` | antfu/skills | 数据源配置 |
 
+## 数据源配置
+
+`skills-cli` 支持从不同的渠道搜索和安装 Skills。
+
+### GitHub 数据源 (`type: "github"`)
+
+这是最常用的配置方式，允许你将 GitHub 仓库作为一个 Skill 库。
+
+```json
+{
+  "type": "github",
+  "repo": "your-name/my-skills",
+  "path": "skills"
+}
+```
+
+*   **`repo`**: GitHub 仓库地址，格式为 `owner/repo`。
+*   **`path`** (可选): 仓库内 Skills 所在的子目录。如果不指定，则默认为仓库根目录。
+
+#### 查找逻辑
+当使用 GitHub 数据源进行搜索时，工具会执行以下操作：
+1.  **扫描目录**：访问指定的仓库路径，并获取其下所有的**一级子目录**。
+2.  **验证 Skill**：每个子目录被视为一个潜在的 Skill。它**必须**包含一个 `SKILL.md` 文件。
+3.  **解析元数据**：工具会解析 `SKILL.md` 开头的 YAML frontmatter（包含 `name`, `description`, `version` 等）。
+4.  **匹配关键词**：将你的搜索词与目录名或 `SKILL.md` 中的描述进行匹配。
+
+#### 推荐的仓库结构
+```text
+my-skills-repo/
+├── git-helper/          <-- 一个 Skill 目录
+│   ├── SKILL.md         <-- 必须包含此文件
+│   └── scripts/         <-- 其他辅助文件
+└── web-best-practices/  <-- 另一个 Skill 目录
+    └── SKILL.md
+```
+
+### 其他数据源 (开发中)
+*   **NPM**: 从 NPM 仓库搜索带有特定关键词的包。
+*   **URL**: 从指定的静态 JSON 或文件索引地址加载。
+
 ## 安装模式
 
 ### link 模式（推荐，默认）
