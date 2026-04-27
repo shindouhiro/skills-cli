@@ -1,0 +1,102 @@
+import type { SkillsConfig } from '~/types'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join, resolve } from 'node:path'
+import process from 'node:process'
+
+const CONFIG_FILENAME = '.skillsrc'
+
+/**
+ * 默认配置
+ */
+export function getDefaultConfig(): SkillsConfig {
+  return {
+    defaultAgents: [],
+    sources: [
+      { type: 'github', repo: 'antfu/skills', path: 'skills' },
+    ],
+    installMode: 'link',
+    scope: 'project',
+  }
+}
+
+/**
+ * 查找项目级配置文件路径
+ * 从当前目录往上找 .skillsrc
+ */
+export function findProjectConfigPath(cwd?: string): string | undefined {
+  let dir = resolve(cwd || process.cwd())
+  const root = resolve('/')
+
+  while (dir !== root) {
+    const configPath = join(dir, CONFIG_FILENAME)
+    if (existsSync(configPath)) {
+      return configPath
+    }
+    dir = resolve(dir, '..')
+  }
+
+  return undefined
+}
+
+/**
+ * 获取用户级配置文件路径
+ */
+export function getGlobalConfigPath(): string {
+  return join(homedir(), '.config', 'skills-cli', CONFIG_FILENAME)
+}
+
+/**
+ * 加载配置（项目级 > 用户级 > 默认）
+ */
+export function loadConfig(cwd?: string): SkillsConfig {
+  const defaultConfig = getDefaultConfig()
+
+  // 优先项目级
+  const projectPath = findProjectConfigPath(cwd)
+  if (projectPath) {
+    return mergeConfig(defaultConfig, readConfigFile(projectPath))
+  }
+
+  // 其次用户级
+  const globalPath = getGlobalConfigPath()
+  if (existsSync(globalPath)) {
+    return mergeConfig(defaultConfig, readConfigFile(globalPath))
+  }
+
+  return defaultConfig
+}
+
+/**
+ * 读取配置文件
+ */
+function readConfigFile(path: string): Partial<SkillsConfig> {
+  try {
+    const content = readFileSync(path, 'utf-8')
+    return JSON.parse(content)
+  }
+  catch {
+    return {}
+  }
+}
+
+/**
+ * 合并配置
+ */
+function mergeConfig(base: SkillsConfig, override: Partial<SkillsConfig>): SkillsConfig {
+  return {
+    ...base,
+    ...override,
+    sources: override.sources ?? base.sources,
+    defaultAgents: override.defaultAgents ?? base.defaultAgents,
+  }
+}
+
+/**
+ * 保存配置文件
+ */
+export function saveConfig(config: SkillsConfig, path: string): void {
+  const dir = resolve(path, '..')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, 'utf-8')
+}

@@ -1,0 +1,11 @@
+// Library 入口 — 导出核心 API 供编程式使用
+export { AGENTS, expandHome, getAgentById, getAgentsByIds } from '~/core/agents'
+export { loadConfig, saveConfig } from '~/core/config'
+export { installSkill } from '~/core/installer'
+export type { InstallOptions, InstallResult } from '~/core/installer'
+export { parseSkillMeta, scanGlobalSkills, scanLocalSkills } from '~/core/scanner'
+export { uninstallSkill } from '~/core/uninstaller'
+export type { UninstallOptions, UninstallResult } from '~/core/uninstaller'
+export { createGitHubSource, parseGitHubUrl } from '~/sources/github'
+export type { SkillSource } from '~/sources/types'
+export type { AgentDefinition, InstalledSkill, InstallMode, SkillMeta, SkillsConfig, SkillSearchResult, SourceConfig } from '~/types'

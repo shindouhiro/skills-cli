@@ -1,0 +1,62 @@
+{
+  "name": "skills-cli",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Search, download and install AI Agent Skills for 30+ coding assistants",
+  "author": "hikaru",
+  "license": "MIT",
+  "keywords": [
+    "ai",
+    "agent",
+    "skills",
+    "cli",
+    "coding-assistant"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "skills": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "lint": "eslint . --cache",
+    "lint:fix": "eslint . --cache --fix",
+    "prepare": "npx simple-git-hooks",
+    "start": "node dist/cli.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "catalog:prod",
+    "cac": "catalog:prod",
+    "consola": "catalog:prod",
+    "ofetch": "catalog:prod",
+    "picocolors": "catalog:prod"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "catalog:dev",
+    "eslint": "catalog:dev",
+    "lint-staged": "catalog:dev",
+    "simple-git-hooks": "catalog:dev",
+    "tsdown": "catalog:dev",
+    "typescript": "catalog:dev",
+    "vitest": "catalog:dev"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "*": "eslint --fix"
+  }
+}
