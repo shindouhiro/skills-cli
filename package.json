@@ -6,6 +6,7 @@
   "description": "Search, download and install AI Agent Skills for 30+ coding assistants",
   "author": "hikaru",
   "license": "MIT",
+  "repository": "shindouhiro/skills-cli",
   "keywords": [
     "ai",
     "agent",
