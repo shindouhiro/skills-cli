@@ -59,10 +59,10 @@ export function createGitHubSource(repo: string, subPath?: string): SkillSource 
             ? `${skillsRoot}/${dir.name}/SKILL.md`
             : `${dir.name}/SKILL.md`
           const skillMdUrl = `https://raw.githubusercontent.com/${repo}/main/${skillMdPath}`
-          const content = await ofetch<string>(skillMdUrl, {
+          const content = await ofetch(skillMdUrl, {
             headers: getHeaders(),
-            responseType: 'text',
-          })
+            parseResponse: txt => txt,
+          }) as string
           const meta = parseSkillMeta(content)
 
           return {
@@ -124,10 +124,10 @@ export function createGitHubSource(repo: string, subPath?: string): SkillSource 
         mkdirSync(fileDir, { recursive: true })
 
         const rawUrl = `https://raw.githubusercontent.com/${repo}/main/${file.path}`
-        const content = await ofetch<string>(rawUrl, {
+        const content = await ofetch(rawUrl, {
           headers: getHeaders(),
-          responseType: 'text',
-        })
+          parseResponse: txt => txt,
+        }) as string
         writeFileSync(filePath, content, 'utf-8')
       })
 

@@ -39,6 +39,8 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
     placeholder: 'antfu/skills',
     defaultValue: 'antfu/skills',
     validate: (value) => {
+      if (!value)
+        return '请输入仓库名称'
       if (!value.includes('/'))
         return '格式应为 owner/repo'
     },
