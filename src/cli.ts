@@ -56,14 +56,14 @@ cli
 
 // === uninstall ===
 cli
-  .command('uninstall <name>', '删除已安装的 skill')
+  .command('uninstall [name]', '删除已安装的 skill（不传 name 进入多选模式）')
   .alias('u')
   .alias('remove')
   .alias('rm')
   .alias('delete')
   .option('-a, --agent <agents>', '目标助手，逗号分隔（如 antigravity,claude-code）')
   .option('-g, --global', '从全局（用户级）目录删除')
-  .action(async (name: string, options: { agent?: string, global?: boolean }) => {
+  .action(async (name: string | undefined, options: { agent?: string, global?: boolean }) => {
     showBanner()
     await uninstallCommand(name, options)
   })

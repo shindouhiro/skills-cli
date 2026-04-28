@@ -1,9 +1,11 @@
+import type { InstalledSkill } from '~/types'
 import process from 'node:process'
 import * as p from '@clack/prompts'
 import consola from 'consola'
 import pc from 'picocolors'
 import { AGENTS, getAgentsByIds } from '~/core/agents'
 import { loadConfig } from '~/core/config'
+import { scanGlobalSkills, scanLocalSkills } from '~/core/scanner'
 import { uninstallSkill } from '~/core/uninstaller'
 
 interface UninstallCommandOptions {
@@ -12,12 +14,190 @@ interface UninstallCommandOptions {
 }
 
 /**
+ * 交互式多选删除：列出所有已安装 skills 供用户多选删除
+ */
+async function interactiveUninstall(options: UninstallCommandOptions): Promise<void> {
+  const cwd = process.cwd()
+
+  // 扫描已安装的 skills
+  const skillsMap = options.global
+    ? scanGlobalSkills()
+    : scanLocalSkills()
+
+  if (skillsMap.size === 0) {
+    consola.info(options.global
+      ? '未找到全局已安装的 skills'
+      : '未找到本地已安装的 skills',
+    )
+    return
+  }
+
+  // 构建多选列表，按 agent 分组
+  const selectOptions: { value: string, label: string, hint: string }[] = []
+  const skillLookup = new Map<string, { skill: InstalledSkill, agentId: string }>()
+
+  for (const [agentId, skills] of skillsMap) {
+    const agent = AGENTS.find(a => a.id === agentId)
+    if (!agent)
+      continue
+
+    for (const skill of skills) {
+      // key 格式: agentId::skillName — 确保跨 agent 唯一
+      const key = `${agentId}::${skill.name}`
+      skillLookup.set(key, { skill, agentId })
+
+      const desc = skill.meta?.description
+        ? ` — ${truncate(skill.meta.description, 50)}`
+        : ''
+      const version = skill.meta?.version ? ` v${skill.meta.version}` : ''
+
+      selectOptions.push({
+        value: key,
+        label: `${skill.name}${version}${desc}`,
+        hint: agent.name,
+      })
+    }
+  }
+
+  if (selectOptions.length === 0) {
+    consola.info('未找到可删除的 skills')
+    return
+  }
+
+  // 显示已安装的 skills 概览
+  consola.log('')
+  consola.info(`共发现 ${pc.bold(String(selectOptions.length))} 个已安装的 skills:`)
+  consola.log('')
+
+  for (const [agentId, skills] of skillsMap) {
+    const agent = AGENTS.find(a => a.id === agentId)
+    if (!agent)
+      continue
+
+    const dir = options.global ? agent.globalDir : agent.projectDir
+    consola.log(`  ${pc.bold(agent.name)} ${pc.dim(`(${dir})`)}`)
+    for (let i = 0; i < skills.length; i++) {
+      const skill = skills[i]
+      const isLast = i === skills.length - 1
+      const prefix = isLast ? '└──' : '├──'
+      const name = pc.green(skill.name)
+      const version = skill.meta?.version
+        ? pc.yellow(` v${skill.meta.version}`)
+        : ''
+      consola.log(`  ${pc.dim(prefix)} ${name}${version}`)
+    }
+    consola.log('')
+  }
+
+  // 多选要删除的 skills
+  const selected = await p.multiselect({
+    message: '选择要删除的 skills（空格选择，回车确认）',
+    options: selectOptions,
+    required: true,
+  })
+
+  if (p.isCancel(selected)) {
+    consola.info('已取消')
+    return
+  }
+
+  const selectedKeys = selected as string[]
+
+  if (selectedKeys.length === 0) {
+    consola.info('未选择任何 skill')
+    return
+  }
+
+  // 按 agentId 分组要删除的 skills
+  const deleteMap = new Map<string, string[]>()
+  for (const key of selectedKeys) {
+    const entry = skillLookup.get(key)
+    if (!entry)
+      continue
+    const existing = deleteMap.get(entry.agentId) || []
+    existing.push(entry.skill.name)
+    deleteMap.set(entry.agentId, existing)
+  }
+
+  // 确认删除
+  consola.log('')
+  consola.warn(`即将删除以下 ${pc.bold(String(selectedKeys.length))} 个 skills:`)
+  for (const [agentId, skillNames] of deleteMap) {
+    const agent = AGENTS.find(a => a.id === agentId)
+    if (!agent)
+      continue
+    for (const skillName of skillNames) {
+      consola.log(`  ${pc.dim('→')} ${pc.red(skillName)} ${pc.dim(`(${agent.name})`)}`)
+    }
+  }
+  consola.log('')
+
+  const confirmed = await p.confirm({
+    message: `确认删除 ${selectedKeys.length} 个 skills？`,
+    initialValue: false,
+  })
+
+  if (p.isCancel(confirmed) || !confirmed) {
+    consola.info('已取消')
+    return
+  }
+
+  // 执行批量删除
+  let totalSuccess = 0
+  let totalFailed = 0
+
+  for (const [agentId, skillNames] of deleteMap) {
+    const agents = getAgentsByIds([agentId])
+    if (agents.length === 0)
+      continue
+
+    for (const skillName of skillNames) {
+      const results = await uninstallSkill({
+        name: skillName,
+        agents,
+        global: options.global ?? false,
+        cwd,
+      })
+
+      for (const result of results) {
+        if (result.success) {
+          totalSuccess++
+          consola.success(`${pc.green('✔')} ${result.agent} → ${pc.dim(skillName)}`)
+        }
+        else {
+          totalFailed++
+          consola.warn(`${pc.yellow('⚠')} ${result.agent}: ${skillName} — ${result.error}`)
+        }
+      }
+    }
+  }
+
+  consola.log('')
+  if (totalSuccess > 0) {
+    consola.success(`已成功删除 ${pc.bold(String(totalSuccess))} 个 skills`)
+  }
+  if (totalFailed > 0) {
+    consola.warn(`${pc.bold(String(totalFailed))} 个删除失败`)
+  }
+}
+
+/**
  * uninstall 命令：从指定助手目录删除 skill
+ *
+ * - 传入 name：直接删除指定 skill（原有逻辑）
+ * - 不传 name：进入交互模式，列出所有已安装 skills 并支持多选删除
  */
 export async function uninstallCommand(
-  name: string,
+  name: string | undefined,
   options: UninstallCommandOptions,
 ): Promise<void> {
+  // 无参数 → 交互式多选删除
+  if (!name) {
+    await interactiveUninstall(options)
+    return
+  }
+
+  // 有参数 → 原有的单 skill 删除逻辑
   const config = loadConfig()
   const cwd = process.cwd()
 
@@ -88,4 +268,10 @@ export async function uninstallCommand(
   else {
     consola.warn('未删除任何 skill')
   }
+}
+
+function truncate(str: string, maxLen: number): string {
+  if (str.length <= maxLen)
+    return str
+  return `${str.slice(0, maxLen - 3)}...`
 }
