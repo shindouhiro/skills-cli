@@ -103,22 +103,22 @@ skills uninstall vue-testing-best-practices
 
 | 助手名称 | ID | 助手名称 | ID |
 | :--- | :--- | :--- | :--- |
-| **Antigravity** | `antigravity` | **Claude Code** | `claude-code` |
-| **Cursor** | `cursor` | **Windsurf** | `windsurf` |
-| **Trae** | `trae` | **GitHub Copilot** | `github-copilot` |
-| **Gemini CLI** | `gemini-cli` | **Cline** | `cline` |
-| **Continue** | `continue` | **Roo Code** | `roo` |
-| **Amp / Kimi Code** | `amp` | **Moltbot** | `moltbot` |
+| **Amp / Kimi Code** | `amp` | **Antigravity** | `antigravity` |
+| **Claude Code** | `claude-code` | **Cline** | `cline` |
 | **CodeBuddy** | `codebuddy` | **Codex** | `codex` |
-| **Command Code** | `command-code` | **Crush** | `crush` |
-| **Droid** | `droid` | **Goose** | `goose` |
+| **Command Code** | `command-code` | **Continue** | `continue` |
+| **Crush** | `crush` | **Cursor** | `cursor` |
+| **Droid** | `droid` | **Gemini CLI** | `gemini-cli` |
+| **GitHub Copilot** | `github-copilot` | **Goose** | `goose` |
 | **Junie** | `junie` | **Kilo Code** | `kilo` |
 | **Kiro CLI** | `kiro-cli` | **Kode** | `kode` |
-| **MCPJam** | `mcpjam` | **Mux** | `mux` |
+| **MCPJam** | `mcpjam` | **Moltbot** | `moltbot` |
+| **Mux** | `mux` | **Neovate** | `neovate` |
 | **OpenCode** | `opencode` | **OpenHands** | `openhands` |
-| **Pi** | `pi` | **Qoder** | `qoder` |
-| **Qwen Code** | `qwen-code` | **Zencoder** | `zencoder` |
-| **Neovate** | `neovate` | **Pochi** | `pochi` |
+| **Pi** | `pi` | **Pochi** | `pochi` |
+| **Qoder** | `qoder` | **Qwen Code** | `qwen-code` |
+| **Roo Code** | `roo` | **Trae** | `trae` |
+| **Windsurf** | `windsurf` | **Zencoder** | `zencoder` |
 
 *...以及更多持续更新中。*
 
