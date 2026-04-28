@@ -5,7 +5,7 @@
 # ⚡ Skills CLI (@shindou/skills-cli)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/shindouhiro/skills-cli/main/assets/banner.png" alt="Skills CLI Banner" width="600" />
+  <img src="./assets/banner.png" alt="Skills CLI Banner" width="600" />
 </p>
 
 <p align="center">
