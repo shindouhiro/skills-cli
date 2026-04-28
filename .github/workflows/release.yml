@@ -34,6 +34,7 @@ jobs:
 
       - name: Release to NPM
         run: pnpm publish --no-git-checks --access public
+        continue-on-error: true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
