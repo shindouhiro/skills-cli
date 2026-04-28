@@ -35,6 +35,7 @@
     "lint": "eslint . --cache",
     "lint:fix": "eslint . --cache --fix",
     "prepare": "npx simple-git-hooks",
+    "release": "bumpp && git push --follow-tags",
     "start": "node dist/cli.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
@@ -49,6 +50,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "catalog:dev",
     "@types/node": "catalog:dev",
+    "bumpp": "catalog:dev",
     "eslint": "catalog:dev",
     "lint-staged": "catalog:dev",
     "simple-git-hooks": "catalog:dev",
