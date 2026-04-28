@@ -55,11 +55,11 @@ Once installed, use the `skills` command to get started.
 ## 💡 Quick Start
 
 ### 1. Search Skills
-Search the public [skills.sh](https://skills.sh/) directory by default, along with configured GitHub sources:
+Search the public [skills.sh](https://skills.sh/) directory by default, along with configured GitHub sources. Supports parallel searching and relevance sorting:
 ```bash
 skills search vue
-skills s testing
-skills search frontend-design
+skills s testing -l 10      # Limit to 10 results
+skills search react --limit 0   # Show all results
 ```
 
 ### 2. Install Skills
@@ -117,7 +117,7 @@ skills rm -g -f testing       # filter "testing" in global skills
 
 | Command | Aliases | Description | Options |
 | :--- | :--- | :--- | :--- |
-| `search <keyword>` | `s` | Search available skills from skills.sh and configured sources | - |
+| `search <keyword>` | `s` | Search available skills from skills.sh and configured sources | `-l, --limit <count>`: Max results to show (default 25, 0 for unlimited) |
 | `install <name>` | `i`, `add` | Install a skill | `-a, --agent <agents>`: Target assistants (comma-separated)<br>`-g, --global`: Install to global directory<br>`-f, --force`: Force overwrite existing skill<br>`-l, --link`: Use symlink mode (recommended)<br>`-i, --interactive`: Force interactive selection |
 | `list` | `ls` | List installed skills | `-g, --global`: List globally installed skills |
 | `uninstall [name]` | `u`, `remove`, `rm`, `delete` | Uninstall skill (omit name for multi-select mode) | `-a, --agent <agents>`: Target assistants<br>`-g, --global`: Remove from global directory<br>`-f, --filter <keyword>`: Filter skills list by keyword |
