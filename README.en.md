@@ -29,7 +29,7 @@
 - 🚀 **One-click Install**: Install skills from GitHub or custom repositories instantly.
 - 📦 **Multi-assistant Support**: Automatically detects and installs to 30+ mainstream AI assistants.
 - 🔗 **Smart Sharing**: Uses symlinks by default — one copy shared across all assistants, saving space and staying in sync.
-- 🔍 **Easy Search**: Built-in fuzzy search to quickly discover skills for your project.
+- 🔍 **Easy Search**: Searches [skills.sh](https://skills.sh/) by default, plus any configured GitHub sources.
 - 🗑️ **Interactive Uninstall**: Run without arguments to enter multi-select mode — browse all installed skills and batch delete.
 - 🔎 **Keyword Filtering**: Filter skills by keyword when uninstalling — via `--filter` flag or interactive input.
 - 🛠️ **Highly Configurable**: Supports project-level and global `.skillsrc` configuration files.
@@ -55,16 +55,22 @@ Once installed, use the `skills` command to get started.
 ## 💡 Quick Start
 
 ### 1. Search Skills
-Search for Vue or testing related skills:
+Search the public [skills.sh](https://skills.sh/) directory by default, along with configured GitHub sources:
 ```bash
 skills search vue
 skills s testing
+skills search frontend-design
 ```
 
 ### 2. Install Skills
 Install a skill to all detected assistants in the current project:
 ```bash
 skills install vue-testing-best-practices
+```
+
+You can also install from a `skills.sh` page URL. The CLI resolves it to the matching GitHub repository and skill:
+```bash
+skills install https://skills.sh/anthropics/skills/frontend-design
 ```
 
 Install to specific assistants (supports multiple):
@@ -111,7 +117,7 @@ skills rm -g -f testing       # filter "testing" in global skills
 
 | Command | Aliases | Description | Options |
 | :--- | :--- | :--- | :--- |
-| `search <keyword>` | `s` | Search available skills | - |
+| `search <keyword>` | `s` | Search available skills from skills.sh and configured sources | - |
 | `install <name>` | `i`, `add` | Install a skill | `-a, --agent <agents>`: Target assistants (comma-separated)<br>`-g, --global`: Install to global directory<br>`-f, --force`: Force overwrite existing skill<br>`-l, --link`: Use symlink mode (recommended)<br>`-i, --interactive`: Force interactive selection |
 | `list` | `ls` | List installed skills | `-g, --global`: List globally installed skills |
 | `uninstall [name]` | `u`, `remove`, `rm`, `delete` | Uninstall skill (omit name for multi-select mode) | `-a, --agent <agents>`: Target assistants<br>`-g, --global`: Remove from global directory<br>`-f, --filter <keyword>`: Filter skills list by keyword |
@@ -153,6 +159,10 @@ Create a config file with `skills init`.
   "scope": "project",
   "sources": [
     {
+      "type": "skills-sh",
+      "url": "https://skills.sh"
+    },
+    {
       "type": "github",
       "repo": "antfu/skills",
       "path": "skills"
@@ -160,6 +170,8 @@ Create a config file with `skills init`.
   ]
 }
 ```
+
+`skills.sh` is the default search source. Even if your project-level or global `.skillsrc` customizes `sources`, the CLI automatically adds `skills.sh` so `skills search <keyword>` can search the public skill directory out of the box.
 
 ## 🛠️ Development
 

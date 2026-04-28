@@ -29,7 +29,7 @@
 - 🚀 **一键安装**：支持从 GitHub 或指定仓库快速安装技能。
 - 📦 **多助手适配**：自动识别并安装到 30+ 种主流 AI 助手的配置目录。
 - 🔗 **智能共享**：默认使用符号链接（Symlink），一份存储多处共享，节省空间且同步更新。
-- 🔍 **便捷搜索**：内置模糊搜索，快速发现适合你项目的 AI 技能。
+- 🔍 **便捷搜索**：默认接入 [skills.sh](https://skills.sh/) 和 GitHub 数据源，快速发现适合你项目的 AI 技能。
 - 🗑️ **交互式删除**：不传参数自动进入多选模式，浏览全部已安装技能并批量删除。
 - 🔎 **关键字过滤**：删除时支持关键字过滤，快速定位目标技能（`--filter` 或交互式输入）。
 - 🛠️ **高度可配置**：支持项目级和全局配置文件 `.skillsrc`。
@@ -55,16 +55,22 @@ yarn global add @shindou/skills-cli
 ## 💡 快速上手
 
 ### 1. 搜索技能
-搜索与 Vue 或测试相关的技能：
+默认会从 [skills.sh](https://skills.sh/) 搜索公开 skill 目录，也会继续搜索配置中的 GitHub 数据源：
 ```bash
 skills search vue
 skills s testing
+skills search frontend-design
 ```
 
 ### 2. 安装技能
 安装指定技能到当前项目的所有已识别助手：
 ```bash
 skills install vue-testing-best-practices
+```
+
+也可以直接安装 `skills.sh` 页面链接，CLI 会解析为对应的 GitHub 仓库和 skill：
+```bash
+skills install https://skills.sh/anthropics/skills/frontend-design
 ```
 
 安装到指定的助手（支持多个）：
@@ -111,7 +117,7 @@ skills rm -g -f testing       # 全局技能中过滤 "testing"
 
 | 指令 | 别名 | 描述 | 选项 |
 | :--- | :--- | :--- | :--- |
-| `search <keyword>` | `s` | 搜索可用的 skills | - |
+| `search <keyword>` | `s` | 从 skills.sh 和配置的数据源搜索可用 skills | - |
 | `install <name>` | `i`, `add` | 安装指定的 skill | `-a, --agent <agents>`: 指定目标助手 (逗号分隔)<br>`-g, --global`: 安装到全局用户目录<br>`-f, --force`: 强制覆盖已存在的 skill<br>`-l, --link`: 使用符号链接模式 (推荐)<br>`-i, --interactive`: 强制进入交互式选择模式 |
 | `list` | `ls` | 列出已安装的 skills | `-g, --global`: 列出全局已安装的 skills |
 | `uninstall [name]` | `u`, `remove`, `rm`, `delete` | 卸载 skill（不传 name 进入多选模式） | `-a, --agent <agents>`: 指定目标助手<br>`-g, --global`: 从全局目录删除<br>`-f, --filter <keyword>`: 按关键字过滤 skills 列表 |
@@ -153,6 +159,10 @@ skills rm -g -f testing       # 全局技能中过滤 "testing"
   "scope": "project",
   "sources": [
     {
+      "type": "skills-sh",
+      "url": "https://skills.sh"
+    },
+    {
       "type": "github",
       "repo": "antfu/skills",
       "path": "skills"
@@ -160,6 +170,8 @@ skills rm -g -f testing       # 全局技能中过滤 "testing"
   ]
 }
 ```
+
+`skills.sh` 是默认搜索源。即使你的项目级或全局 `.skillsrc` 自定义了 `sources`，CLI 也会自动补上 `skills.sh`，确保 `skills search <keyword>` 默认可以搜索公开 skill 目录。
 
 ## 🛠️ 开发
 

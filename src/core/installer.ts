@@ -10,6 +10,7 @@ import { loadConfig } from '~/core/config'
 import { isSafeSkillName, parseSkillPath } from '~/core/skill-name'
 import { getStoreSkillDir, getSymlinkTarget } from '~/core/store'
 import { createGitHubSource, parseGitHubUrl } from '~/sources/github'
+import { parseSkillsShUrl } from '~/sources/skills-sh'
 
 export interface InstallOptions {
   /** skill 名称或 URL */
@@ -65,6 +66,12 @@ export async function installSkill(options: InstallOptions): Promise<InstallResu
     const parsedPath = parseSkillPath(parsed.skill)
     source = createGitHubSource(parsed.repo, parsedPath.subPath)
     skillName = parsedPath.skillName
+  }
+
+  const skillsShEntry = parseSkillsShUrl(name)
+  if (skillsShEntry) {
+    source = createGitHubSource(`${skillsShEntry.owner}/${skillsShEntry.repo}`)
+    skillName = skillsShEntry.skill
   }
 
   if (!source) {

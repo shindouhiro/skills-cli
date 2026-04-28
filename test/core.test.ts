@@ -1,9 +1,6 @@
-import type { SkillSource } from '~/sources/types'
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
-import { AGENTS } from '~/core/agents'
+import { describe, expect, it } from 'vitest'
 import { loadConfig } from '~/core/config'
 import { installSkill } from '~/core/installer'
 import { parseSkillMeta, scanLocalSkills } from '~/core/scanner'
@@ -11,61 +8,8 @@ import { isSafeSkillName, parseSkillPath } from '~/core/skill-name'
 import { getStoreSkillDir } from '~/core/store'
 import { uninstallSkill } from '~/core/uninstaller'
 import { parseGitHubUrl } from '~/sources/github'
-
-const agents = [
-  AGENTS.find(agent => agent.id === 'antigravity'),
-  AGENTS.find(agent => agent.id === 'claude-code'),
-].filter(agent => agent !== undefined)
-
-const tempDirs: string[] = []
-
-afterEach(() => {
-  for (const dir of tempDirs.splice(0)) {
-    if (existsSync(dir))
-      rmSync(dir, { recursive: true, force: true })
-  }
-})
-
-function createTempDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'skills-cli-test-'))
-  tempDirs.push(dir)
-  return dir
-}
-
-function createSource(files: Record<string, string> = {}): SkillSource {
-  return {
-    name: 'test-source',
-    async search() {
-      return []
-    },
-    async download(skillName, destDir) {
-      const skillDir = join(destDir, skillName)
-      mkdirSync(skillDir, { recursive: true })
-      writeFileSync(
-        join(skillDir, 'SKILL.md'),
-        [
-          '---',
-          `name: ${skillName}`,
-          'description: Test skill',
-          'version: 1.0.0',
-          '---',
-          '',
-          '# Test Skill',
-          '',
-        ].join('\n'),
-        'utf-8',
-      )
-
-      for (const [relativePath, content] of Object.entries(files)) {
-        const filePath = join(skillDir, relativePath)
-        mkdirSync(join(filePath, '..'), { recursive: true })
-        writeFileSync(filePath, content, 'utf-8')
-      }
-
-      return skillDir
-    },
-  }
-}
+import { parseSkillsShSitemap, parseSkillsShUrl } from '~/sources/skills-sh'
+import { testAgents as agents, createSource, createTempDir } from './helpers'
 
 // ───────────────────────────────────────────
 // config
@@ -89,7 +33,10 @@ describe('config', () => {
       defaultAgents: ['antigravity'],
       installMode: 'link',
       scope: 'project',
-      sources: [{ type: 'github', repo: 'owner/repo', path: 'skills' }],
+      sources: [
+        { type: 'skills-sh', url: 'https://skills.sh' },
+        { type: 'github', repo: 'owner/repo', path: 'skills' },
+      ],
     })
   })
 
@@ -98,7 +45,10 @@ describe('config', () => {
     const config = loadConfig(root)
     expect(config.installMode).toBe('link')
     expect(config.scope).toBe('project')
-    expect(config.sources).toHaveLength(1)
+    expect(config.sources).toEqual([
+      { type: 'skills-sh', url: 'https://skills.sh' },
+      { type: 'github', repo: 'antfu/skills', path: 'skills' },
+    ])
   })
 })
 
@@ -524,5 +474,46 @@ describe('github source helpers', () => {
   it('非 GitHub URL 返回 null', () => {
     expect(parseGitHubUrl('not-a-github-url')).toBeNull()
     expect(parseGitHubUrl('npm:some-package')).toBeNull()
+  })
+})
+
+describe('skills.sh source helpers', () => {
+  it('解析 skills.sh skill 页面 URL', () => {
+    expect(parseSkillsShUrl('https://skills.sh/vercel-labs/agent-skills/web-design-guidelines')).toEqual({
+      owner: 'vercel-labs',
+      repo: 'agent-skills',
+      skill: 'web-design-guidelines',
+      url: 'https://skills.sh/vercel-labs/agent-skills/web-design-guidelines',
+    })
+  })
+
+  it('忽略非 skill 页面 URL', () => {
+    expect(parseSkillsShUrl('https://skills.sh/picks')).toBeNull()
+    expect(parseSkillsShUrl('https://example.com/owner/repo/skill')).toBeNull()
+  })
+
+  it('从 sitemap 解析 skill 列表', () => {
+    const sitemap = [
+      '<urlset>',
+      '<url><loc>https://skills.sh/picks</loc></url>',
+      '<url><loc>https://skills.sh/anthropics/skills/frontend-design</loc></url>',
+      '<url><loc>https://skills.sh/vercel-labs/agent-skills/web-design-guidelines</loc></url>',
+      '</urlset>',
+    ].join('')
+
+    expect(parseSkillsShSitemap(sitemap)).toEqual([
+      {
+        owner: 'anthropics',
+        repo: 'skills',
+        skill: 'frontend-design',
+        url: 'https://skills.sh/anthropics/skills/frontend-design',
+      },
+      {
+        owner: 'vercel-labs',
+        repo: 'agent-skills',
+        skill: 'web-design-guidelines',
+        url: 'https://skills.sh/vercel-labs/agent-skills/web-design-guidelines',
+      },
+    ])
   })
 })

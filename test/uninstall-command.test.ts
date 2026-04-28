@@ -1,14 +1,11 @@
-import type { SkillSource } from '~/sources/types'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 // 导入 mock 后的模块
 import * as p from '@clack/prompts'
+import consola from 'consola'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { uninstallCommand } from '~/commands/uninstall'
-
-import { AGENTS } from '~/core/agents'
-import { installSkill } from '~/core/installer'
+import { testAgents as agents, createTempDir, installTestSkills as installSkills } from './helpers'
 
 // Mock @clack/prompts
 vi.mock('@clack/prompts', () => {
@@ -22,70 +19,6 @@ vi.mock('@clack/prompts', () => {
   }
 })
 
-const agents = [
-  AGENTS.find(agent => agent.id === 'antigravity'),
-  AGENTS.find(agent => agent.id === 'claude-code'),
-].filter(agent => agent !== undefined)
-
-const tempDirs: string[] = []
-
-function createTempDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'skills-cli-uninstall-test-'))
-  tempDirs.push(dir)
-  return dir
-}
-
-function createSource(files: Record<string, string> = {}): SkillSource {
-  return {
-    name: 'test-source',
-    async search() {
-      return []
-    },
-    async download(skillName, destDir) {
-      const skillDir = join(destDir, skillName)
-      mkdirSync(skillDir, { recursive: true })
-      writeFileSync(
-        join(skillDir, 'SKILL.md'),
-        [
-          '---',
-          `name: ${skillName}`,
-          `description: Test skill ${skillName}`,
-          'version: 1.0.0',
-          '---',
-          '',
-          `# ${skillName}`,
-          '',
-        ].join('\n'),
-        'utf-8',
-      )
-
-      for (const [relativePath, content] of Object.entries(files)) {
-        const filePath = join(skillDir, relativePath)
-        mkdirSync(join(filePath, '..'), { recursive: true })
-        writeFileSync(filePath, content, 'utf-8')
-      }
-
-      return skillDir
-    },
-  }
-}
-
-/**
- * 在 cwd 下安装指定 skills 到指定 agents
- */
-async function installSkills(cwd: string, skillNames: string[], targetAgents = agents): Promise<void> {
-  for (const name of skillNames) {
-    await installSkill({
-      agents: targetAgents,
-      cwd,
-      global: false,
-      mode: 'copy',
-      name,
-      source: createSource(),
-    })
-  }
-}
-
 /**
  * Mock p.text 返回空字符串（跳过过滤）
  */
@@ -93,18 +26,24 @@ function mockSkipFilter(): void {
   vi.mocked(p.text).mockResolvedValue('')
 }
 
+function mockConsolaOutput(): void {
+  vi.spyOn(consola, 'error').mockImplementation(() => {})
+  vi.spyOn(consola, 'info').mockImplementation(() => {})
+  vi.spyOn(consola, 'log').mockImplementation(() => {})
+  vi.spyOn(consola, 'start').mockImplementation(() => {})
+  vi.spyOn(consola, 'success').mockImplementation(() => {})
+  vi.spyOn(consola, 'warn').mockImplementation(() => {})
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   // 默认跳过过滤（多数测试不关心过滤步骤）
   mockSkipFilter()
+  mockConsolaOutput()
 })
 
 afterEach(() => {
   vi.restoreAllMocks()
-  for (const dir of tempDirs.splice(0)) {
-    if (existsSync(dir))
-      rmSync(dir, { recursive: true, force: true })
-  }
 })
 
 // ───────────────────────────────────────────

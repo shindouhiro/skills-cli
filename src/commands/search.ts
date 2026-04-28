@@ -5,6 +5,7 @@ import pc from 'picocolors'
 import { truncate } from '~/commands/shared'
 import { loadConfig } from '~/core/config'
 import { createGitHubSource } from '~/sources/github'
+import { createSkillsShSource } from '~/sources/skills-sh'
 
 /**
  * search 命令：搜索可用的 skills
@@ -62,6 +63,8 @@ function createSourcesFromConfig(configs: SourceConfig[]): SkillSource[] {
     .map((c) => {
       if (c.type === 'github')
         return createGitHubSource(c.repo, c.path)
+      if (c.type === 'skills-sh')
+        return createSkillsShSource(c.url)
       // TODO: npm source, url source
       return null
     })

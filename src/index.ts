@@ -7,5 +7,6 @@ export { parseSkillMeta, scanGlobalSkills, scanLocalSkills } from '~/core/scanne
 export { uninstallSkill } from '~/core/uninstaller'
 export type { UninstallOptions, UninstallResult } from '~/core/uninstaller'
 export { createGitHubSource, parseGitHubUrl } from '~/sources/github'
+export { createSkillsShSource, parseSkillsShSitemap, parseSkillsShUrl } from '~/sources/skills-sh'
 export type { SkillSource } from '~/sources/types'
 export type { AgentDefinition, InstalledSkill, InstallMode, SkillMeta, SkillsConfig, SkillSearchResult, SourceConfig } from '~/types'

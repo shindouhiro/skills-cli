@@ -73,5 +73,6 @@ export interface SkillsConfig {
  */
 export type SourceConfig
   = | { type: 'github', repo: string, path?: string }
+    | { type: 'skills-sh', url?: string }
     | { type: 'npm', keyword: string }
     | { type: 'url', url: string }

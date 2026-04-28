@@ -1,4 +1,4 @@
-import type { SkillsConfig } from '~/types'
+import type { SkillsConfig, SourceConfig } from '~/types'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -13,6 +13,7 @@ export function getDefaultConfig(): SkillsConfig {
   return {
     defaultAgents: [],
     sources: [
+      { type: 'skills-sh', url: 'https://skills.sh' },
       { type: 'github', repo: 'antfu/skills', path: 'skills' },
     ],
     installMode: 'link',
@@ -87,9 +88,19 @@ function mergeConfig(base: SkillsConfig, override: Partial<SkillsConfig>): Skill
   return {
     ...base,
     ...override,
-    sources: override.sources ?? base.sources,
+    sources: withDefaultSkillsShSource(override.sources ?? base.sources),
     defaultAgents: override.defaultAgents ?? base.defaultAgents,
   }
+}
+
+function withDefaultSkillsShSource(sources: SourceConfig[]): SourceConfig[] {
+  if (sources.some(source => source.type === 'skills-sh'))
+    return sources
+
+  return [
+    { type: 'skills-sh', url: 'https://skills.sh' },
+    ...sources,
+  ]
 }
 
 /**
