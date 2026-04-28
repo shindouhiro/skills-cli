@@ -24,9 +24,12 @@ function showBanner(): void {
 cli
   .command('search <keyword>', '搜索可用的 skills')
   .alias('s')
-  .action(async (keyword: string) => {
+  .option('-l, --limit <count>', '最大显示结果数（默认 25，0 表示不限制）')
+  .action(async (keyword: string, options: { limit?: string }) => {
     showBanner()
-    await searchCommand(keyword)
+    await searchCommand(keyword, {
+      limit: options.limit !== undefined ? Number(options.limit) : undefined,
+    })
   })
 
 // === install ===

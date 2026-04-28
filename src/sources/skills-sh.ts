@@ -1,6 +1,7 @@
 import type { SkillSource } from '~/sources/types'
 import type { SkillSearchResult } from '~/types'
 import { ofetch } from 'ofetch'
+import { withCache } from '~/core/cache'
 
 const DEFAULT_BASE_URL = 'https://skills.sh'
 const DEFAULT_MAX_RESULTS = 50
@@ -19,9 +20,12 @@ export function createSkillsShSource(baseUrl = DEFAULT_BASE_URL): SkillSource {
     name: `skills.sh:${normalizedBaseUrl}`,
 
     async search(keyword: string): Promise<SkillSearchResult[]> {
-      const sitemap = await ofetch<string>(`${normalizedBaseUrl}/sitemap.xml`, {
-        parseResponse: txt => txt,
-      })
+      // 缓存 sitemap，5 分钟内不重复请求
+      const cacheKey = `skills-sh:sitemap:${normalizedBaseUrl}`
+      const sitemap = await withCache(cacheKey, () =>
+        ofetch<string>(`${normalizedBaseUrl}/sitemap.xml`, {
+          parseResponse: txt => txt,
+        }))
 
       const entries = parseSkillsShSitemap(sitemap)
       const lowerKeyword = keyword.toLowerCase()

@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
 import { ofetch } from 'ofetch'
+import { withCache } from '~/core/cache'
 import { parseSkillMeta } from '~/core/scanner'
 
 interface GitHubContent {
@@ -42,18 +43,25 @@ export function createGitHubSource(repo: string, subPath?: string): SkillSource 
     name: `github:${repo}${subPath ? `/${subPath}` : ''}`,
 
     async search(keyword: string): Promise<SkillSearchResult[]> {
-      // 获取 skills 目录列表
+      const lowerKeyword = keyword.toLowerCase()
+
+      // 获取 skills 目录列表（带缓存，5 分钟内不重复请求）
       const contentsPath = skillsRoot ? `${baseApi}/contents/${skillsRoot}` : `${baseApi}/contents`
-      const contents = await ofetch<GitHubContent[]>(contentsPath, {
-        headers: getHeaders(),
-      })
+      const cacheKey = `github:contents:${repo}:${skillsRoot}`
+      const contents = await withCache(cacheKey, () =>
+        ofetch<GitHubContent[]>(contentsPath, { headers: getHeaders() }))
 
       // 筛选目录（每个目录是一个 skill）
       const skillDirs = contents.filter(c => c.type === 'dir')
-      const results: SkillSearchResult[] = []
 
-      // 并行获取每个 skill 的 SKILL.md
-      const promises = skillDirs.map(async (dir) => {
+      // 第一轮：按目录名预过滤，只有名称匹配的才拉取 SKILL.md
+      // 未匹配名称的目录跳过，大幅减少网络请求数
+      const nameMatched = skillDirs.filter(dir =>
+        dir.name.toLowerCase().includes(lowerKeyword),
+      )
+
+      // 并行获取匹配目录的 SKILL.md
+      const promises = nameMatched.map(async (dir) => {
         try {
           const skillMdPath = skillsRoot
             ? `${skillsRoot}/${dir.name}/SKILL.md`
@@ -80,17 +88,7 @@ export function createGitHubSource(repo: string, subPath?: string): SkillSource 
       })
 
       const settled = await Promise.all(promises)
-      for (const result of settled) {
-        if (result)
-          results.push(result)
-      }
-
-      // 按关键词过滤
-      const lowerKeyword = keyword.toLowerCase()
-      return results.filter((r) => {
-        return r.name.toLowerCase().includes(lowerKeyword)
-          || r.description.toLowerCase().includes(lowerKeyword)
-      })
+      return settled.filter((r): r is SkillSearchResult => r !== null)
     },
 
     async download(skillName: string, destDir: string): Promise<string> {
