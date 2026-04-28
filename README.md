@@ -87,6 +87,16 @@ skills ls -g
 skills uninstall vue-testing-best-practices
 ```
 
+## 🛠️ 指令一览
+
+| 指令 | 别名 | 描述 | 选项 |
+| :--- | :--- | :--- | :--- |
+| `search <keyword>` | `s` | 搜索可用的 skills | - |
+| `install <name>` | `i`, `add` | 安装指定的 skill | `-a, --agent <agents>`: 指定目标助手 (逗号分隔)<br>`-g, --global`: 安装到全局用户目录<br>`-f, --force`: 强制覆盖已存在的 skill<br>`-l, --link`: 使用符号链接模式 (推荐)<br>`-i, --interactive`: 强制进入交互式选择模式 |
+| `list` | `ls` | 列出已安装的 skills | `-g, --global`: 列出全局已安装的 skills |
+| `uninstall <name>` | `u`, `remove`, `rm`, `delete` | 卸载指定的 skill | `-a, --agent <agents>`: 指定目标助手<br>`-g, --global`: 从全局目录删除 |
+| `init` | - | 初始化 `.skillsrc` 配置文件 | `-g, --global`: 初始化全局配置 |
+
 ## 📂 支持的 AI 助手 (30+)
 
 `skills-cli` 能够自动识别并支持以下助手的技能存放目录：
