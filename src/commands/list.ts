@@ -1,5 +1,6 @@
 import consola from 'consola'
 import pc from 'picocolors'
+import { getAgentSkillDirLabel, truncate } from '~/commands/shared'
 import { AGENTS } from '~/core/agents'
 import { scanGlobalSkills, scanLocalSkills } from '~/core/scanner'
 
@@ -30,7 +31,7 @@ export async function listCommand(options: ListCommandOptions): Promise<void> {
     if (!agent)
       continue
 
-    const dir = options.global ? agent.globalDir : agent.projectDir
+    const dir = getAgentSkillDirLabel(agent, options.global)
     consola.log(`  ${pc.bold(agent.name)} ${pc.dim(`(${dir})`)}`)
 
     for (let i = 0; i < skills.length; i++) {
@@ -58,10 +59,4 @@ export async function listCommand(options: ListCommandOptions): Promise<void> {
     totalSkills += skills.length
   }
   consola.info(`共 ${pc.bold(String(skillsMap.size))} 个助手, ${pc.bold(String(totalSkills))} 个 skills`)
-}
-
-function truncate(str: string, maxLen: number): string {
-  if (str.length <= maxLen)
-    return str
-  return `${str.slice(0, maxLen - 3)}...`
 }

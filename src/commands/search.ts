@@ -2,6 +2,7 @@ import type { SkillSource } from '~/sources/types'
 import type { SourceConfig } from '~/types'
 import consola from 'consola'
 import pc from 'picocolors'
+import { truncate } from '~/commands/shared'
 import { loadConfig } from '~/core/config'
 import { createGitHubSource } from '~/sources/github'
 
@@ -65,10 +66,4 @@ function createSourcesFromConfig(configs: SourceConfig[]): SkillSource[] {
       return null
     })
     .filter((s): s is SkillSource => s !== null)
-}
-
-function truncate(str: string, maxLen: number): string {
-  if (str.length <= maxLen)
-    return str
-  return `${str.slice(0, maxLen - 3)}...`
 }

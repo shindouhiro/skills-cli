@@ -1,8 +1,10 @@
+import type { SelectOption } from '~/commands/shared'
 import type { InstalledSkill } from '~/types'
 import process from 'node:process'
 import * as p from '@clack/prompts'
 import consola from 'consola'
 import pc from 'picocolors'
+import { getAgentSkillDirLabel, printAgentPlan, resolveTargetAgents, truncate } from '~/commands/shared'
 import { AGENTS, getAgentsByIds } from '~/core/agents'
 import { loadConfig } from '~/core/config'
 import { scanGlobalSkills, scanLocalSkills } from '~/core/scanner'
@@ -12,12 +14,6 @@ interface UninstallCommandOptions {
   agent?: string
   global?: boolean
   filter?: string
-}
-
-interface SelectOption {
-  value: string
-  label: string
-  hint: string
 }
 
 interface SkillLookupEntry {
@@ -83,7 +79,7 @@ function printSkillsOverview(
     if (!agent)
       continue
 
-    const dir = options.global ? agent.globalDir : agent.projectDir
+    const dir = getAgentSkillDirLabel(agent, options.global)
     consola.log(`  ${pc.bold(agent.name)} ${pc.dim(`(${dir})`)}`)
     for (let i = 0; i < skills.length; i++) {
       const skill = skills[i]
@@ -286,44 +282,19 @@ export async function uninstallCommand(
   const config = loadConfig()
   const cwd = process.cwd()
 
-  // 确定目标 agents
-  let agents = options.agent
-    ? getAgentsByIds(options.agent.split(',').map(s => s.trim()))
-    : getAgentsByIds(config.defaultAgents)
+  const agents = await resolveTargetAgents({
+    agent: options.agent,
+    defaultAgentIds: config.defaultAgents,
+    global: options.global,
+  })
 
-  // 如果没有指定也没有默认值，弹出交互选择
-  if (agents.length === 0) {
-    const selected = await p.multiselect({
-      message: '选择目标助手（空格选择，回车确认）',
-      options: AGENTS.map(a => ({
-        value: a.id,
-        label: a.name,
-        hint: options.global ? a.globalDir : a.projectDir,
-      })),
-      required: true,
-    })
-
-    if (p.isCancel(selected)) {
-      consola.info('已取消')
-      return
-    }
-
-    agents = getAgentsByIds(selected as string[])
-  }
-
-  if (agents.length === 0) {
-    consola.error('未选择任何目标助手')
+  if (!agents)
     return
-  }
 
   // 显示删除计划
   consola.log('')
   consola.info(`将删除 ${pc.cyan(name)}（若存在）:`)
-  for (const agent of agents) {
-    const dir = options.global ? agent.globalDir : agent.projectDir
-    consola.log(`  ${pc.dim('→')} ${pc.bold(agent.name)} ${pc.dim(`(${dir})`)}`)
-  }
-  consola.log('')
+  printAgentPlan(agents, { global: options.global })
 
   // 执行删除
   const results = await uninstallSkill({
@@ -353,10 +324,4 @@ export async function uninstallCommand(
   else {
     consola.warn('未删除任何 skill')
   }
-}
-
-function truncate(str: string, maxLen: number): string {
-  if (str.length <= maxLen)
-    return str
-  return `${str.slice(0, maxLen - 3)}...`
 }
