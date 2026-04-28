@@ -12,6 +12,7 @@ interface InstallCommandOptions {
   global?: boolean
   force?: boolean
   link?: boolean
+  interactive?: boolean
 }
 
 /**
@@ -25,13 +26,16 @@ export async function installCommand(
   const cwd = process.cwd()
   const mode: InstallMode = options.link ? 'link' : config.installMode ?? 'copy'
 
+  if (options.interactive)
+    p.intro(pc.bgCyan(pc.black(' skills install ')))
+
   // 确定目标 agents
   let agents = options.agent
     ? getAgentsByIds(options.agent.split(',').map(s => s.trim()))
-    : getAgentsByIds(config.defaultAgents)
+    : (options.interactive ? [] : getAgentsByIds(config.defaultAgents))
 
-  // 如果没有指定也没有默认值，弹出交互选择
-  if (agents.length === 0) {
+  // 如果强制交互，或者没有指定也没有默认值，弹出交互选择
+  if (options.interactive || agents.length === 0) {
     const selected = await p.multiselect({
       message: '选择目标助手（空格选择，回车确认）',
       options: AGENTS.map(a => ({
@@ -39,11 +43,15 @@ export async function installCommand(
         label: a.name,
         hint: options.global ? a.globalDir : a.projectDir,
       })),
+      initialValues: agents.map(a => a.id),
       required: true,
     })
 
     if (p.isCancel(selected)) {
-      consola.info('已取消')
+      if (options.interactive)
+        p.cancel('已取消')
+      else
+        consola.info('已取消')
       return
     }
 
@@ -56,7 +64,9 @@ export async function installCommand(
   }
 
   // 显示安装计划
-  consola.log('')
+  if (!options.interactive)
+    consola.log('')
+
   consola.info(`将以 ${pc.cyan(mode)} 模式安装 ${pc.cyan(name)} 到以下助手:`)
   for (const agent of agents) {
     const dir = options.global ? agent.globalDir : agent.projectDir
@@ -89,7 +99,11 @@ export async function installCommand(
 
   consola.log('')
   if (successCount > 0) {
-    consola.success(`已安装到 ${pc.bold(String(successCount))} 个助手目录`)
+    const message = `已安装到 ${pc.bold(String(successCount))} 个助手目录`
+    if (options.interactive)
+      p.outro(pc.green(message))
+    else
+      consola.success(message)
   }
   else {
     consola.error('安装失败')

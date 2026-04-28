@@ -71,6 +71,11 @@ skills i vue-testing -a antigravity,claude-code
 skills i vue-testing -g
 ```
 
+强制交互式选择目标助手（忽略配置文件中的默认设置）：
+```bash
+skills i vue-testing -i
+```
+
 ### 3. 查看已安装
 ```bash
 skills list
