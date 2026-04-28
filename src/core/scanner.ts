@@ -8,14 +8,14 @@ import { AGENTS, expandHome } from '~/core/agents'
  * 解析 SKILL.md 的 frontmatter
  */
 export function parseSkillMeta(content: string): SkillMeta | undefined {
-  const match = content.match(/^---\n([\s\S]*?)\n---/)
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/)
   if (!match)
     return undefined
 
   const frontmatter = match[1]
   const meta: Record<string, unknown> = {}
 
-  for (const line of frontmatter.split('\n')) {
+  for (const line of frontmatter.split(/\r?\n/u)) {
     const colonIdx = line.indexOf(':')
     if (colonIdx === -1)
       continue
@@ -34,16 +34,26 @@ export function parseSkillMeta(content: string): SkillMeta | undefined {
 }
 
 /**
- * 扫描单个 agent 目录下的已安装 skills
+ * 从 skill 目录读取元信息
  */
-function scanAgentSkills(agent: AgentDefinition, baseDir: string): InstalledSkill[] {
-  const skillsDir = resolve(baseDir, agent.projectDir)
+function readSkillMeta(skillDir: string): SkillMeta | undefined {
+  const skillMdPath = join(skillDir, 'SKILL.md')
+  if (!existsSync(skillMdPath))
+    return undefined
 
+  const content = readFileSync(skillMdPath, 'utf-8')
+  return parseSkillMeta(content)
+}
+
+/**
+ * 扫描单个目录下的 skills
+ */
+function scanSkillsInDir(agent: AgentDefinition, skillsDir: string): InstalledSkill[] {
   if (!existsSync(skillsDir))
     return []
 
-  const entries = readdirSync(skillsDir, { withFileTypes: true })
   const skills: InstalledSkill[] = []
+  const entries = readdirSync(skillsDir, { withFileTypes: true })
 
   for (const entry of entries) {
     if (!entry.isDirectory() && !entry.isSymbolicLink())
@@ -53,23 +63,29 @@ function scanAgentSkills(agent: AgentDefinition, baseDir: string): InstalledSkil
     if (!existsSync(skillDir))
       continue
 
-    const skillMdPath = join(skillDir, 'SKILL.md')
-
-    let meta: SkillMeta | undefined
-    if (existsSync(skillMdPath)) {
-      const content = readFileSync(skillMdPath, 'utf-8')
-      meta = parseSkillMeta(content)
-    }
-
     skills.push({
       name: entry.name,
       path: skillDir,
       agent,
-      meta,
+      meta: readSkillMeta(skillDir),
     })
   }
 
   return skills
+}
+
+function scanAllAgents(
+  resolveSkillsDir: (agent: AgentDefinition) => string,
+): Map<string, InstalledSkill[]> {
+  const result = new Map<string, InstalledSkill[]>()
+
+  for (const agent of AGENTS) {
+    const skills = scanSkillsInDir(agent, resolveSkillsDir(agent))
+    if (skills.length > 0)
+      result.set(agent.id, skills)
+  }
+
+  return result
 }
 
 /**
@@ -77,60 +93,12 @@ function scanAgentSkills(agent: AgentDefinition, baseDir: string): InstalledSkil
  */
 export function scanLocalSkills(cwd?: string): Map<string, InstalledSkill[]> {
   const baseDir = resolve(cwd || process.cwd())
-  const result = new Map<string, InstalledSkill[]>()
-
-  for (const agent of AGENTS) {
-    const skills = scanAgentSkills(agent, baseDir)
-    if (skills.length > 0) {
-      result.set(agent.id, skills)
-    }
-  }
-
-  return result
+  return scanAllAgents(agent => resolve(baseDir, agent.projectDir))
 }
 
 /**
  * 扫描全局已安装的 skills（用户级）
  */
 export function scanGlobalSkills(): Map<string, InstalledSkill[]> {
-  const result = new Map<string, InstalledSkill[]>()
-
-  for (const agent of AGENTS) {
-    const globalDir = expandHome(agent.globalDir)
-    if (!existsSync(globalDir))
-      continue
-
-    const entries = readdirSync(globalDir, { withFileTypes: true })
-    const skills: InstalledSkill[] = []
-
-    for (const entry of entries) {
-      if (!entry.isDirectory() && !entry.isSymbolicLink())
-        continue
-
-      const skillDir = join(globalDir, entry.name)
-      if (!existsSync(skillDir))
-        continue
-
-      const skillMdPath = join(skillDir, 'SKILL.md')
-
-      let meta: SkillMeta | undefined
-      if (existsSync(skillMdPath)) {
-        const content = readFileSync(skillMdPath, 'utf-8')
-        meta = parseSkillMeta(content)
-      }
-
-      skills.push({
-        name: entry.name,
-        path: skillDir,
-        agent,
-        meta,
-      })
-    }
-
-    if (skills.length > 0) {
-      result.set(agent.id, skills)
-    }
-  }
-
-  return result
+  return scanAllAgents(agent => expandHome(agent.globalDir))
 }

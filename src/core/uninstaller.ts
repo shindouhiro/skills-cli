@@ -2,6 +2,7 @@ import type { AgentDefinition } from '~/types'
 import { existsSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { expandHome } from '~/core/agents'
+import { isSafeSkillName } from '~/core/skill-name'
 import { cleanupEmptyStore, getStoreSkillDir, hasStoreReferences } from '~/core/store'
 
 export interface UninstallOptions {
@@ -21,14 +22,6 @@ export interface UninstallResult {
   path: string
   success: boolean
   error?: string
-}
-
-function isSafeSkillName(name: string): boolean {
-  if (!name.trim())
-    return false
-  if (name === '.' || name === '..')
-    return false
-  return !name.includes('/') && !name.includes('\\')
 }
 
 /**

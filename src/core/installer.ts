@@ -7,6 +7,7 @@ import process from 'node:process'
 import consola from 'consola'
 import { expandHome } from '~/core/agents'
 import { loadConfig } from '~/core/config'
+import { isSafeSkillName, parseSkillPath } from '~/core/skill-name'
 import { getStoreSkillDir, getSymlinkTarget } from '~/core/store'
 import { createGitHubSource, parseGitHubUrl } from '~/sources/github'
 
@@ -50,8 +51,20 @@ export async function installSkill(options: InstallOptions): Promise<InstallResu
 
   const parsed = parseGitHubUrl(name)
   if (parsed) {
-    source = createGitHubSource(parsed.repo)
-    skillName = parsed.skill || name
+    if (!parsed.skill) {
+      return agents.map(agent => ({
+        skill: name,
+        agent: agent.name,
+        path: '',
+        mode,
+        success: false,
+        error: 'GitHub 地址缺少 skill 路径',
+      }))
+    }
+
+    const parsedPath = parseSkillPath(parsed.skill)
+    source = createGitHubSource(parsed.repo, parsedPath.subPath)
+    skillName = parsedPath.skillName
   }
 
   if (!source) {
@@ -64,6 +77,17 @@ export async function installSkill(options: InstallOptions): Promise<InstallResu
     else {
       source = createGitHubSource('antfu/skills', 'skills')
     }
+  }
+
+  if (!isSafeSkillName(skillName)) {
+    return agents.map(agent => ({
+      skill: skillName,
+      agent: agent.name,
+      path: '',
+      mode,
+      success: false,
+      error: 'skill 名称不合法',
+    }))
   }
 
   // 下载到临时目录

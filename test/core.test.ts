@@ -7,6 +7,7 @@ import { AGENTS } from '~/core/agents'
 import { loadConfig } from '~/core/config'
 import { installSkill } from '~/core/installer'
 import { parseSkillMeta, scanLocalSkills } from '~/core/scanner'
+import { isSafeSkillName, parseSkillPath } from '~/core/skill-name'
 import { getStoreSkillDir } from '~/core/store'
 import { uninstallSkill } from '~/core/uninstaller'
 import { parseGitHubUrl } from '~/sources/github'
@@ -137,6 +138,42 @@ describe('scanner', () => {
 
   it('无效 frontmatter 返回 undefined', () => {
     expect(parseSkillMeta('# No frontmatter here')).toBeUndefined()
+  })
+
+  it('支持 CRLF frontmatter', () => {
+    expect(parseSkillMeta([
+      '---\r',
+      'name: windows-skill\r',
+      'description: from windows\r',
+      'version: 2.0.0\r',
+      '---\r',
+      '',
+    ].join('\n'))).toEqual({
+      author: undefined,
+      description: 'from windows',
+      metadata: undefined,
+      name: 'windows-skill',
+      version: '2.0.0',
+    })
+  })
+})
+
+describe('skill name', () => {
+  it('校验合法 skill 名称', () => {
+    expect(isSafeSkillName('vue-testing')).toBe(true)
+    expect(isSafeSkillName('nested/path')).toBe(false)
+    expect(isSafeSkillName('..')).toBe(false)
+    expect(isSafeSkillName('  ')).toBe(false)
+  })
+
+  it('解析 skill 路径为子目录与名称', () => {
+    expect(parseSkillPath('skills/vue')).toEqual({
+      skillName: 'vue',
+      subPath: 'skills',
+    })
+    expect(parseSkillPath('vue')).toEqual({
+      skillName: 'vue',
+    })
   })
 })
 
@@ -305,6 +342,53 @@ describe('installer', () => {
       },
       name: 'scanned-skill',
     })
+  })
+
+  it('拒绝包含路径分隔符的 skill 名称', async () => {
+    const cwd = createTempDir()
+
+    const results = await installSkill({
+      agents: [agents[0]],
+      cwd,
+      global: false,
+      mode: 'copy',
+      name: 'bad/path',
+      source: createSource(),
+    })
+
+    expect(results).toEqual([
+      {
+        agent: 'Antigravity',
+        error: 'skill 名称不合法',
+        mode: 'copy',
+        path: '',
+        skill: 'bad/path',
+        success: false,
+      },
+    ])
+  })
+
+  it('github 地址缺少 skill 路径时返回错误', async () => {
+    const cwd = createTempDir()
+
+    const results = await installSkill({
+      agents: [agents[0]],
+      cwd,
+      global: false,
+      mode: 'copy',
+      name: 'github:antfu/skills',
+    })
+
+    expect(results).toEqual([
+      {
+        agent: 'Antigravity',
+        error: 'GitHub 地址缺少 skill 路径',
+        mode: 'copy',
+        path: '',
+        skill: 'github:antfu/skills',
+        success: false,
+      },
+    ])
   })
 })
 
