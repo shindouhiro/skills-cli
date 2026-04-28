@@ -1,7 +1,7 @@
 {
   "name": "@shindou/skills-cli",
   "type": "module",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "packageManager": "pnpm@10.33.0",
   "description": "Search, download and install AI Agent Skills for 30+ coding assistants",
   "author": "hikaru",
