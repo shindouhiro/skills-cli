@@ -1,3 +1,7 @@
+<p align="right">
+  <a href="./README.md">中文</a> | <a href="./README.en.md">English</a>
+</p>
+
 # ⚡ Skills CLI (@shindou/skills-cli)
 
 <p align="center">
@@ -26,6 +30,8 @@
 - 📦 **多助手适配**：自动识别并安装到 30+ 种主流 AI 助手的配置目录。
 - 🔗 **智能共享**：默认使用符号链接（Symlink），一份存储多处共享，节省空间且同步更新。
 - 🔍 **便捷搜索**：内置模糊搜索，快速发现适合你项目的 AI 技能。
+- 🗑️ **交互式删除**：不传参数自动进入多选模式，浏览全部已安装技能并批量删除。
+- 🔎 **关键字过滤**：删除时支持关键字过滤，快速定位目标技能（`--filter` 或交互式输入）。
 - 🛠️ **高度可配置**：支持项目级和全局配置文件 `.skillsrc`。
 
 ## 🚀 安装
@@ -83,8 +89,22 @@ skills ls -g
 ```
 
 ### 4. 卸载技能
+
+直接指定名称删除：
 ```bash
 skills uninstall vue-testing-best-practices
+```
+
+不传名称进入交互式多选删除模式（浏览所有已安装技能 → 过滤 → 多选 → 确认）：
+```bash
+skills rm
+skills rm -g          # 交互式删除全局技能
+```
+
+使用关键字过滤后再多选删除：
+```bash
+skills rm --filter vue        # 只显示含 "vue" 的技能
+skills rm -g -f testing       # 全局技能中过滤 "testing"
 ```
 
 ## 🛠️ 指令一览
@@ -94,7 +114,7 @@ skills uninstall vue-testing-best-practices
 | `search <keyword>` | `s` | 搜索可用的 skills | - |
 | `install <name>` | `i`, `add` | 安装指定的 skill | `-a, --agent <agents>`: 指定目标助手 (逗号分隔)<br>`-g, --global`: 安装到全局用户目录<br>`-f, --force`: 强制覆盖已存在的 skill<br>`-l, --link`: 使用符号链接模式 (推荐)<br>`-i, --interactive`: 强制进入交互式选择模式 |
 | `list` | `ls` | 列出已安装的 skills | `-g, --global`: 列出全局已安装的 skills |
-| `uninstall <name>` | `u`, `remove`, `rm`, `delete` | 卸载指定的 skill | `-a, --agent <agents>`: 指定目标助手<br>`-g, --global`: 从全局目录删除 |
+| `uninstall [name]` | `u`, `remove`, `rm`, `delete` | 卸载 skill（不传 name 进入多选模式） | `-a, --agent <agents>`: 指定目标助手<br>`-g, --global`: 从全局目录删除<br>`-f, --filter <keyword>`: 按关键字过滤 skills 列表 |
 | `init` | - | 初始化 `.skillsrc` 配置文件 | `-g, --global`: 初始化全局配置 |
 
 ## 📂 支持的 AI 助手 (30+)

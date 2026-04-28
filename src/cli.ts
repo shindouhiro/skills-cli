@@ -63,7 +63,8 @@ cli
   .alias('delete')
   .option('-a, --agent <agents>', '目标助手，逗号分隔（如 antigravity,claude-code）')
   .option('-g, --global', '从全局（用户级）目录删除')
-  .action(async (name: string | undefined, options: { agent?: string, global?: boolean }) => {
+  .option('-f, --filter <keyword>', '按关键字过滤 skills 列表')
+  .action(async (name: string | undefined, options: { agent?: string, global?: boolean, filter?: string }) => {
     showBanner()
     await uninstallCommand(name, options)
   })
