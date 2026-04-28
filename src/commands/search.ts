@@ -7,14 +7,14 @@ import { loadConfig } from '~/core/config'
 import { createGitHubSource } from '~/sources/github'
 import { createSkillsShSource } from '~/sources/skills-sh'
 
-/** 默认最大显示结果数 */
-const DEFAULT_LIMIT = 25
+/** 默认不限制结果数（0 = 不限制） */
+const DEFAULT_LIMIT = 0
 
 /**
  * search 命令选项
  */
 export interface SearchOptions {
-  /** 最大显示结果数，0 表示不限制 */
+  /** 最大显示结果数，不传或传 0 表示不限制 */
   limit?: number
 }
 
@@ -156,7 +156,7 @@ export async function searchCommand(keyword: string, options: SearchOptions = {}
     consola.log('')
 
     if (hasMore) {
-      consola.success(`显示前 ${pc.bold(String(limit))} 个结果（共 ${pc.bold(String(sorted.length))} 个，使用 ${pc.cyan('--limit 0')} 查看全部）`)
+      consola.success(`显示前 ${pc.bold(String(limit))} 个结果（共 ${pc.bold(String(sorted.length))} 个）`)
     }
     else {
       consola.success(`找到 ${pc.bold(String(sorted.length))} 个 skills`)

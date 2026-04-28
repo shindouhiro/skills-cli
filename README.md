@@ -55,11 +55,10 @@ yarn global add @shindou/skills-cli
 ## 💡 快速上手
 
 ### 1. 搜索技能
-默认会从 [skills.sh](https://skills.sh/) 搜索公开 skill 目录，也会继续搜索配置中的 GitHub 数据源。支持并行搜索和相关度排序：
+默认会从 [skills.sh](https://skills.sh/) 搜索公开 skill 目录，也会继续搜索配置中的 GitHub 数据源。展示全部结果，支持并行搜索和相关度排序：
 ```bash
 skills search vue
-skills s testing -l 10      # 限制只显示 10 条结果
-skills search react --limit 0   # 显示全部搜索结果
+skills s react --limit 20    # 限制只显示 20 条结果
 ```
 
 ### 2. 安装技能
@@ -117,7 +116,7 @@ skills rm -g -f testing       # 全局技能中过滤 "testing"
 
 | 指令 | 别名 | 描述 | 选项 |
 | :--- | :--- | :--- | :--- |
-| `search <keyword>` | `s` | 从 skills.sh 和配置的数据源搜索可用 skills | `-l, --limit <count>`: 最大显示结果数 (默认 25, 0 表示不限制) |
+| `search <keyword>` | `s` | 从 skills.sh 和配置的数据源搜索可用 skills（默认显示全部结果） | `-l, --limit <count>`: 限制最大显示数量 |
 | `install <name>` | `i`, `add` | 安装指定的 skill | `-a, --agent <agents>`: 指定目标助手 (逗号分隔)<br>`-g, --global`: 安装到全局用户目录<br>`-f, --force`: 强制覆盖已存在的 skill<br>`-l, --link`: 使用符号链接模式 (推荐)<br>`-i, --interactive`: 强制进入交互式选择模式 |
 | `list` | `ls` | 列出已安装的 skills | `-g, --global`: 列出全局已安装的 skills |
 | `uninstall [name]` | `u`, `remove`, `rm`, `delete` | 卸载 skill（不传 name 进入多选模式） | `-a, --agent <agents>`: 指定目标助手<br>`-g, --global`: 从全局目录删除<br>`-f, --filter <keyword>`: 按关键字过滤 skills 列表 |
