@@ -92,3 +92,22 @@ export function parseSkillsShUrl(url: string): SkillsShEntry | null {
     url: parsed.toString(),
   }
 }
+
+export function parseSkillsShSource(value: string): SkillsShEntry | null {
+  const normalized = value.replace(/^\[(.*)\]$/u, '$1')
+  const match = normalized.match(/^skills\.sh:([^/]+\/[^/]+)(?:\/(.+))?$/u)
+  if (!match?.[2])
+    return null
+
+  const [owner, repo] = match[1].split('/')
+  const skill = match[2].split('/').filter(Boolean).at(-1)
+  if (!owner || !repo || !skill)
+    return null
+
+  return {
+    owner,
+    repo,
+    skill,
+    url: `https://skills.sh/${owner}/${repo}/${skill}`,
+  }
+}

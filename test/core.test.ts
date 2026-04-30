@@ -7,8 +7,8 @@ import { parseSkillMeta, scanLocalSkills } from '~/core/scanner'
 import { isSafeSkillName, parseSkillPath } from '~/core/skill-name'
 import { getStoreSkillDir } from '~/core/store'
 import { uninstallSkill } from '~/core/uninstaller'
-import { parseGitHubUrl } from '~/sources/github'
-import { parseSkillsShSitemap, parseSkillsShUrl } from '~/sources/skills-sh'
+import { findSkillPrefix, parseGitHubUrl } from '~/sources/github'
+import { parseSkillsShSitemap, parseSkillsShSource, parseSkillsShUrl } from '~/sources/skills-sh'
 import { testAgents as agents, createSource, createTempDir } from './helpers'
 
 // ───────────────────────────────────────────
@@ -340,6 +340,38 @@ describe('installer', () => {
       },
     ])
   })
+
+  it('下载失败时返回每个 agent 的失败结果而不是抛出异常', async () => {
+    const cwd = createTempDir()
+
+    const results = await installSkill({
+      agents: [agents[0]],
+      cwd,
+      global: false,
+      mode: 'copy',
+      name: 'missing-skill',
+      source: {
+        name: 'broken-source',
+        async search() {
+          return []
+        },
+        async download() {
+          throw new Error('远程 skill 未找到')
+        },
+      },
+    })
+
+    expect(results).toEqual([
+      {
+        agent: 'Antigravity',
+        error: '远程 skill 未找到',
+        mode: 'copy',
+        path: '',
+        skill: 'missing-skill',
+        success: false,
+      },
+    ])
+  })
 })
 
 // ───────────────────────────────────────────
@@ -475,6 +507,25 @@ describe('github source helpers', () => {
     expect(parseGitHubUrl('not-a-github-url')).toBeNull()
     expect(parseGitHubUrl('npm:some-package')).toBeNull()
   })
+
+  it('能定位嵌套目录中的 skill 前缀', () => {
+    expect(findSkillPrefix([
+      {
+        mode: '100644',
+        path: 'skills/vue-ui-skills/element-plus-vue3/SKILL.md',
+        sha: 'sha',
+        type: 'blob',
+        url: 'url',
+      },
+      {
+        mode: '100644',
+        path: 'skills/vue-ui-skills/element-plus-vue3/examples/button.md',
+        sha: 'sha',
+        type: 'blob',
+        url: 'url',
+      },
+    ], 'skills', 'element-plus-vue3')).toBe('skills/vue-ui-skills/element-plus-vue3/')
+  })
 })
 
 describe('skills.sh source helpers', () => {
@@ -484,6 +535,15 @@ describe('skills.sh source helpers', () => {
       repo: 'agent-skills',
       skill: 'web-design-guidelines',
       url: 'https://skills.sh/vercel-labs/agent-skills/web-design-guidelines',
+    })
+  })
+
+  it('解析 skills.sh 来源标记', () => {
+    expect(parseSkillsShSource('[skills.sh:teachingai/full-stack-skills/element-plus-vue3]')).toEqual({
+      owner: 'teachingai',
+      repo: 'full-stack-skills',
+      skill: 'element-plus-vue3',
+      url: 'https://skills.sh/teachingai/full-stack-skills/element-plus-vue3',
     })
   })
 

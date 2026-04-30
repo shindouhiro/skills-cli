@@ -1,5 +1,5 @@
 import type { SkillSource } from '~/sources/types'
-import type { AgentDefinition, InstallMode } from '~/types'
+import type { AgentDefinition, InstallMode, SourceConfig } from '~/types'
 import { cpSync, existsSync, mkdirSync, rmSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -10,7 +10,7 @@ import { loadConfig } from '~/core/config'
 import { isSafeSkillName, parseSkillPath } from '~/core/skill-name'
 import { getStoreSkillDir, getSymlinkTarget } from '~/core/store'
 import { createGitHubSource, parseGitHubUrl } from '~/sources/github'
-import { parseSkillsShUrl } from '~/sources/skills-sh'
+import { createSkillsShSource, parseSkillsShSource, parseSkillsShUrl } from '~/sources/skills-sh'
 
 export interface InstallOptions {
   /** skill 名称或 URL */
@@ -42,13 +42,16 @@ export interface InstallResult {
  * 安装 skill 到指定 agents 的目录
  */
 export async function installSkill(options: InstallOptions): Promise<InstallResult[]> {
-  const { name, agents, cwd } = options
+  const { agents, cwd } = options
+  const name = unwrapSourceToken(options.name)
   const results: InstallResult[] = []
   const mode = options.mode ?? 'copy'
 
   // 解析来源：GitHub URL 或使用配置中的默认源
   let source = options.source
   let skillName = name
+  let configSources: SourceConfig[] | undefined
+  let canUseSkillsShFallback = false
 
   const parsed = parseGitHubUrl(name)
   if (parsed) {
@@ -68,7 +71,7 @@ export async function installSkill(options: InstallOptions): Promise<InstallResu
     skillName = parsedPath.skillName
   }
 
-  const skillsShEntry = parseSkillsShUrl(name)
+  const skillsShEntry = parseSkillsShUrl(name) ?? parseSkillsShSource(name)
   if (skillsShEntry) {
     source = createGitHubSource(`${skillsShEntry.owner}/${skillsShEntry.repo}`)
     skillName = skillsShEntry.skill
@@ -76,7 +79,9 @@ export async function installSkill(options: InstallOptions): Promise<InstallResu
 
   if (!source) {
     // 从配置加载默认数据源
-    const config = loadConfig()
+    const config = loadConfig(cwd)
+    configSources = config.sources
+    canUseSkillsShFallback = true
     const firstGitHub = config.sources.find(s => s.type === 'github')
     if (firstGitHub && firstGitHub.type === 'github') {
       source = createGitHubSource(firstGitHub.repo, firstGitHub.path)
@@ -103,7 +108,13 @@ export async function installSkill(options: InstallOptions): Promise<InstallResu
 
   try {
     consola.start(`正在下载 skill: ${skillName}`)
-    const downloadedDir = await source.download(skillName, tmpDir)
+    const downloadedDir = await downloadWithFallback({
+      configSources,
+      destDir: tmpDir,
+      originalSource: source,
+      skillName,
+      useSkillsShFallback: canUseSkillsShFallback,
+    })
     consola.success(`下载完成: ${skillName}`)
 
     let storeSkillDir: string | undefined
@@ -182,10 +193,76 @@ export async function installSkill(options: InstallOptions): Promise<InstallResu
       }
     }
   }
+  catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return agents.map(agent => ({
+      skill: skillName,
+      agent: agent.name,
+      path: '',
+      mode,
+      success: false,
+      error: message,
+    }))
+  }
   finally {
     // 清理临时目录
     rmSync(tmpDir, { recursive: true, force: true })
   }
 
   return results
+}
+
+interface DownloadWithFallbackOptions {
+  originalSource: SkillSource
+  skillName: string
+  destDir: string
+  configSources?: SourceConfig[]
+  useSkillsShFallback: boolean
+}
+
+async function downloadWithFallback(options: DownloadWithFallbackOptions): Promise<string> {
+  try {
+    return await options.originalSource.download(options.skillName, options.destDir)
+  }
+  catch (err) {
+    if (!options.useSkillsShFallback)
+      throw err
+
+    const fallbackSource = await resolveSkillsShFallbackSource(
+      options.skillName,
+      options.configSources ?? [],
+    )
+    if (!fallbackSource)
+      throw err
+
+    consola.info(`已从 skills.sh 匹配到来源: ${fallbackSource.name}`)
+    return await fallbackSource.download(options.skillName, options.destDir)
+  }
+}
+
+async function resolveSkillsShFallbackSource(
+  skillName: string,
+  configSources: SourceConfig[],
+): Promise<SkillSource | undefined> {
+  const skillsShConfigs = configSources.filter(source => source.type === 'skills-sh')
+
+  for (const config of skillsShConfigs) {
+    const source = createSkillsShSource(config.url)
+    const results = await source.search(skillName)
+    const exact = results.find(result => result.name === skillName && result.sourceUrl)
+    if (!exact?.sourceUrl)
+      continue
+
+    const entry = parseSkillsShUrl(exact.sourceUrl)
+    if (!entry)
+      continue
+
+    return createGitHubSource(`${entry.owner}/${entry.repo}`)
+  }
+
+  return undefined
+}
+
+function unwrapSourceToken(name: string): string {
+  return name.trim().replace(/^\[(github:|skills\.sh:)(.+)\]$/u, '$1$2')
 }

@@ -80,5 +80,6 @@ export async function installCommand(
   }
   else {
     consola.error('安装失败')
+    process.exitCode = 1
   }
 }

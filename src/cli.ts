@@ -82,12 +82,22 @@ cli
 
 // === Global options ===
 cli.help()
-cli.version(version)
+cli.option('-v, --version', 'Display version number')
 
 // === Run ===
 async function main(): Promise<void> {
   try {
-    cli.parse()
+    const parsed = cli.parse(process.argv, { run: false })
+
+    if (parsed.options.version) {
+      consola.log(version)
+      return
+    }
+
+    if (parsed.options.help)
+      return
+
+    await cli.runMatchedCommand()
 
     // 没有子命令时显示帮助
     if (!cli.matchedCommand) {

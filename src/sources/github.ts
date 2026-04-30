@@ -75,7 +75,7 @@ export function createGitHubSource(repo: string, subPath?: string): SkillSource 
 
           return {
             name: dir.name,
-            meta,
+            ...(meta ? { meta } : {}),
             source: `github:${repo}`,
             sourceUrl: `https://github.com/${repo}/tree/main/${skillsRoot ? `${skillsRoot}/` : ''}${dir.name}`,
             description: meta?.description || '',
@@ -88,7 +88,7 @@ export function createGitHubSource(repo: string, subPath?: string): SkillSource 
       })
 
       const settled = await Promise.all(promises)
-      return settled.filter((r): r is SkillSearchResult => r !== null)
+      return settled.filter((r): r is NonNullable<typeof r> => r !== null)
     },
 
     async download(skillName: string, destDir: string): Promise<string> {
@@ -101,10 +101,10 @@ export function createGitHubSource(repo: string, subPath?: string): SkillSource 
         { headers: getHeaders() },
       )
 
-      // 过滤出该 skill 目录下的所有文件
-      const prefix = skillsRoot
-        ? `${skillsRoot}/${skillName}/`
-        : `${skillName}/`
+      const prefix = findSkillPrefix(treeData.tree, skillsRoot, skillName)
+      if (!prefix)
+        throw new Error(`Skill "${skillName}" 在 ${repo} 中未找到`)
+
       const files = treeData.tree.filter(
         item => item.type === 'blob' && item.path.startsWith(prefix),
       )
@@ -139,6 +139,34 @@ export function createGitHubSource(repo: string, subPath?: string): SkillSource 
       return skillDir
     },
   }
+}
+
+export function findSkillPrefix(
+  tree: GitHubTreeItem[],
+  skillsRoot: string,
+  skillName: string,
+): string | undefined {
+  const directPrefix = skillsRoot
+    ? `${skillsRoot}/${skillName}/`
+    : `${skillName}/`
+  const directSkillMd = `${directPrefix}SKILL.md`
+
+  if (tree.some(item => item.type === 'blob' && item.path === directSkillMd))
+    return directPrefix
+
+  const rootPrefix = skillsRoot ? `${skillsRoot}/` : ''
+  const nestedSuffix = `/${skillName}/SKILL.md`
+
+  const candidates = tree
+    .filter(item =>
+      item.type === 'blob'
+      && item.path.startsWith(rootPrefix)
+      && item.path.endsWith(nestedSuffix),
+    )
+    .map(item => item.path.slice(0, -'SKILL.md'.length))
+    .sort((a, b) => a.length - b.length)
+
+  return candidates[0]
 }
 
 /**
