@@ -11,6 +11,7 @@ import { testAgents as agents, createTempDir, installTestSkills as installSkills
 vi.mock('@clack/prompts', () => {
   const cancel = Symbol('cancel')
   return {
+    autocompleteMultiselect: vi.fn(),
     multiselect: vi.fn(),
     confirm: vi.fn(),
     text: vi.fn(),
@@ -428,16 +429,17 @@ describe('uninstallCommand — 指定 name 模式', () => {
     const cwd = createTempDir()
     const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd)
 
-    // Mock multiselect 返回选中的 agent
-    vi.mocked(p.multiselect).mockResolvedValue(['antigravity'])
+    // Mock autocompleteMultiselect 返回选中的 agent
+    vi.mocked(p.autocompleteMultiselect).mockResolvedValue(['antigravity'])
 
     await installSkills(cwd, ['prompt-agent'], [agents[0]])
     await uninstallCommand('prompt-agent', {})
 
-    // multiselect 应被调用来选择 agent
-    expect(p.multiselect).toHaveBeenCalledWith(
+    // autocompleteMultiselect 应被调用来选择 agent
+    expect(p.autocompleteMultiselect).toHaveBeenCalledWith(
       expect.objectContaining({
         message: expect.stringContaining('选择目标助手'),
+        placeholder: expect.stringContaining('过滤'),
       }),
     )
 

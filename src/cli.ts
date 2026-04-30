@@ -41,7 +41,7 @@ cli
   .option('-g, --global', '安装到全局（用户级）目录')
   .option('-f, --force', '强制覆盖已存在的 skill')
   .option('-l, --link', '使用共享存储并在助手目录创建符号链接')
-  .option('-i, --interactive', '强制进入交互式选择模式')
+  .option('-i, --interactive', '显式进入交互式选择模式')
   .action(async (name: string, options: { agent?: string, global?: boolean, force?: boolean, link?: boolean, interactive?: boolean }) => {
     showBanner()
     await installCommand(name, options)

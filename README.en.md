@@ -62,7 +62,7 @@ skills s react --limit 20    # Limit to 20 results
 ```
 
 ### 2. Install Skills
-Install a skill to all detected assistants in the current project:
+Install a skill with a filterable assistant multi-select prompt by default; `defaultAgents` are used as preselected choices:
 ```bash
 skills install vue-testing-best-practices
 ```
@@ -82,7 +82,7 @@ Install to global (user-level) directory:
 skills i vue-testing -g
 ```
 
-Force interactive assistant selection (ignoring defaults from config):
+Explicitly enter filterable interactive assistant selection:
 ```bash
 skills i vue-testing -i
 ```
@@ -117,7 +117,7 @@ skills rm -g -f testing       # filter "testing" in global skills
 | Command | Aliases | Description | Options |
 | :--- | :--- | :--- | :--- |
 | `search <keyword>` | `s` | Search available skills from skills.sh and configured sources (all results shown by default) | `-l, --limit <count>`: Limit max results to show |
-| `install <name>` | `i`, `add` | Install a skill | `-a, --agent <agents>`: Target assistants (comma-separated)<br>`-g, --global`: Install to global directory<br>`-f, --force`: Force overwrite existing skill<br>`-l, --link`: Use symlink mode (recommended)<br>`-i, --interactive`: Force interactive selection |
+| `install <name>` | `i`, `add` | Install a skill | `-a, --agent <agents>`: Target assistants (comma-separated; skips the prompt)<br>`-g, --global`: Install to global directory<br>`-f, --force`: Force overwrite existing skill<br>`-l, --link`: Use symlink mode (recommended)<br>`-i, --interactive`: Explicitly enter interactive selection |
 | `list` | `ls` | List installed skills | `-g, --global`: List globally installed skills |
 | `uninstall [name]` | `u`, `remove`, `rm`, `delete` | Uninstall skill (omit name for multi-select mode) | `-a, --agent <agents>`: Target assistants<br>`-g, --global`: Remove from global directory<br>`-f, --filter <keyword>`: Filter skills list by keyword |
 | `init` | - | Initialize `.skillsrc` config file | `-g, --global`: Initialize global config |

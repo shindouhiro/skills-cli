@@ -22,26 +22,27 @@ export async function installCommand(
   name: string,
   options: InstallCommandOptions,
 ): Promise<void> {
-  const config = loadConfig()
   const cwd = process.cwd()
+  const config = loadConfig(cwd)
   const mode: InstallMode = options.link ? 'link' : config.installMode ?? 'copy'
+  const shouldSelectAgents = options.interactive || !options.agent
 
-  if (options.interactive)
+  if (shouldSelectAgents)
     p.intro(pc.bgCyan(pc.black(' skills install ')))
 
   const agents = await resolveTargetAgents({
     agent: options.agent,
     defaultAgentIds: config.defaultAgents,
     global: options.global,
-    interactive: options.interactive,
-    cancelMode: options.interactive ? 'prompt' : 'log',
+    interactive: shouldSelectAgents,
+    cancelMode: shouldSelectAgents ? 'prompt' : 'log',
   })
 
   if (!agents)
     return
 
   // 显示安装计划
-  if (!options.interactive)
+  if (!shouldSelectAgents)
     consola.log('')
 
   consola.info(`将以 ${pc.cyan(mode)} 模式安装 ${pc.cyan(name)} 到以下助手:`)
@@ -73,7 +74,7 @@ export async function installCommand(
   consola.log('')
   if (successCount > 0) {
     const message = `已安装到 ${pc.bold(String(successCount))} 个助手目录`
-    if (options.interactive)
+    if (shouldSelectAgents)
       p.outro(pc.green(message))
     else
       consola.success(message)

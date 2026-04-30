@@ -42,13 +42,14 @@ export async function resolveTargetAgents(
 ): Promise<AgentDefinition[] | undefined> {
   let agents = options.agent
     ? getAgentsByIds(parseAgentIds(options.agent))
-    : (options.interactive ? [] : getAgentsByIds(options.defaultAgentIds))
+    : getAgentsByIds(options.defaultAgentIds)
 
   if (options.interactive || agents.length === 0) {
-    const selected = await p.multiselect({
-      message: '选择目标助手（空格选择，回车确认）',
+    const selected = await p.autocompleteMultiselect({
+      message: '选择目标助手（输入过滤，空格选择，回车确认）',
       options: createAgentSelectOptions(options.global),
       initialValues: agents.map(agent => agent.id),
+      placeholder: '输入助手名称、ID 或目录过滤',
       required: true,
     })
 

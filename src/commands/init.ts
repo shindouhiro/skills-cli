@@ -18,13 +18,14 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
   p.intro(pc.bgCyan(pc.black(' skills init ')))
 
   // 1. 选择默认助手
-  const selectedAgents = await p.multiselect({
-    message: '选择默认目标助手',
+  const selectedAgents = await p.autocompleteMultiselect({
+    message: '选择默认目标助手（输入过滤，空格选择，回车确认）',
     options: AGENTS.map(a => ({
       value: a.id,
       label: a.name,
       hint: a.projectDir,
     })),
+    placeholder: '输入助手名称、ID 或目录过滤',
     required: true,
   })
 
