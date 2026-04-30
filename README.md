@@ -172,14 +172,7 @@ skills rm -g -f testing       # 全局技能中过滤 "testing"
 
 `skills.sh` 是默认搜索源。即使你的项目级或全局 `.skillsrc` 自定义了 `sources`，CLI 也会自动补上 `skills.sh`，确保 `skills search <keyword>` 默认可以搜索公开 skill 目录。
 
-## 🛠️ 开发
 
-```bash
-pnpm install    # 安装依赖
-pnpm dev        # 监控并自动构建
-pnpm build      # 生产构建
-pnpm test       # 运行测试
-```
 
 ## 📄 开源协议
 

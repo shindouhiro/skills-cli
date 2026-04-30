@@ -172,15 +172,6 @@ Create a config file with `skills init`.
 
 `skills.sh` is the default search source. Even if your project-level or global `.skillsrc` customizes `sources`, the CLI automatically adds `skills.sh` so `skills search <keyword>` can search the public skill directory out of the box.
 
-## 🛠️ Development
-
-```bash
-pnpm install    # Install dependencies
-pnpm dev        # Watch and auto-build
-pnpm build      # Production build
-pnpm test       # Run tests
-```
-
 ## 📄 License
 
 Licensed under [MIT](./LICENSE).
