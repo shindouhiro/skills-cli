@@ -88,4 +88,26 @@ describe('installCommand', () => {
       }),
     )
   })
+
+  it('agent 选项不带值时进入助手选择', async () => {
+    vi.mocked(p.autocompleteMultiselect).mockResolvedValue(['claude-code'])
+
+    await installCommand('demo-skill', { agent: true, global: true })
+
+    expect(p.autocompleteMultiselect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialValues: ['antigravity', 'claude-code'],
+      }),
+    )
+    expect(installSkill).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agents: [
+          expect.objectContaining({
+            id: 'claude-code',
+          }),
+        ],
+        global: true,
+      }),
+    )
+  })
 })

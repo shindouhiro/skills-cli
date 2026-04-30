@@ -8,7 +8,7 @@ import { loadConfig } from '~/core/config'
 import { installSkill } from '~/core/installer'
 
 interface InstallCommandOptions {
-  agent?: string
+  agent?: string | boolean
   global?: boolean
   force?: boolean
   link?: boolean
@@ -25,13 +25,16 @@ export async function installCommand(
   const cwd = process.cwd()
   const config = loadConfig(cwd)
   const mode: InstallMode = options.link ? 'link' : config.installMode ?? 'copy'
-  const shouldSelectAgents = options.interactive || !options.agent
+  const specifiedAgent = typeof options.agent === 'string' && options.agent.trim()
+    ? options.agent
+    : undefined
+  const shouldSelectAgents = options.interactive || !specifiedAgent
 
   if (shouldSelectAgents)
     p.intro(pc.bgCyan(pc.black(' skills install ')))
 
   const agents = await resolveTargetAgents({
-    agent: options.agent,
+    agent: specifiedAgent,
     defaultAgentIds: config.defaultAgents,
     global: options.global,
     interactive: shouldSelectAgents,
