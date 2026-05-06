@@ -70,23 +70,37 @@ skills source add https://github.com/owner/repo -p skills
 skills source add https://skills.sh -g    # 写入全局配置
 ```
 
-### 3. 添加上传目标
-把本地 skills 上传到你自己的 GitHub 或其他 Git 远端前，先配置上传目标：
+### 3. 上传技能
+你可以把本地安装的 skills 上传到自己的 GitHub 或其他 Git 远端仓库。
+
+#### 交互式上传 (推荐)
+如果不带参数直接运行 `upload`，CLI 会引导你完成整个流程：
+1. **自动配置**：如果尚未配置上传目标，会提示输入 Git URL 并自动保存。
+2. **来源选择**：让你选择从「项目级」还是「全局」扫描 skills。
+3. **多选上传**：弹出支持搜索过滤的列表，勾选你想上传的 skills。
+
 ```bash
-skills upload target add git@github.com:owner/skills.git --name personal -p skills
-skills upload target add https://github.com/owner/skills.git --name personal -g
+skills upload
 ```
 
-上传当前项目已安装的 skills：
+#### 命令行指定
+也可以通过参数直接指定要上传的内容或目标：
 ```bash
+# 上传当前项目所有已安装的 skills
 skills upload --all
-skills upload vue-testing-best-practices --target personal
+
+# 上传指定的全局 skills 到特定目标
+skills upload vue-testing-best-practices --target personal -g
+
+# 仅查看上传计划 (不执行 push)
 skills upload --dry-run
 ```
 
-上传全局（用户级）skills：
+#### 管理上传目标
+如果你想手动预先配置多个上传目标：
 ```bash
-skills upload --all -g
+skills upload target add git@github.com:owner/skills.git --name personal -p skills
+skills upload target add https://github.com/owner/skills.git --name work -g
 ```
 
 ### 4. 安装技能

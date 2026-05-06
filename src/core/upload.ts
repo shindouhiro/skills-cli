@@ -92,6 +92,10 @@ export function collectUploadSkills(options: CollectUploadSkillsOptions): Collec
 
   for (const skills of skillsMap.values()) {
     for (const skill of skills) {
+      // 跳过没有 SKILL.md 的目录（如 .agent, .skills, .system 等）
+      if (!existsSync(join(skill.path, 'SKILL.md')))
+        continue
+
       const entries = byName.get(skill.name) ?? []
       entries.push(skill)
       byName.set(skill.name, entries)

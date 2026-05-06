@@ -70,23 +70,38 @@ skills source add https://github.com/owner/repo -p skills
 skills sources add https://skills.sh -g    # write to global config
 ```
 
-### 3. Add Upload Targets
-Configure a Git upload target before uploading local skills to your own GitHub repository or another Git remote:
+### 3. Upload Skills
+You can upload locally installed skills to your own GitHub repository or any other Git remote.
+
+#### Interactive Upload (Recommended)
+Running `upload` without arguments will guide you through the entire process:
+1. **Auto-configuration**: If no upload target is configured, it will prompt for a Git URL and save it automatically.
+2. **Source Selection**: Choose whether to scan skills from "Project" or "Global" scope.
+3. **Multi-select**: Select which skills to upload from a filterable list.
+
 ```bash
-skills upload target add git@github.com:owner/skills.git --name personal -p skills
-skills upload target add https://github.com/owner/skills.git --name personal -g
+skills upload
 ```
 
-Upload installed project skills:
+#### Command Line Usage
+You can also specify skills or targets directly via flags:
 ```bash
+# Upload all skills installed in the current project
 skills upload --all
-skills upload vue-testing-best-practices --target personal
+
+# Upload a specific global skill to a specific target
+skills upload vue-testing-best-practices --target personal -g
+
+# Preview the upload plan (without pushing)
 skills upload --dry-run
 ```
 
-Upload global user-level skills:
+#### Managing Upload Targets
+To manually pre-configure multiple upload targets:
 ```bash
-skills upload --all -g
+# Example: Add targets to project or global config
+skills upload target add git@github.com:owner/skills.git --name personal -p skills
+skills upload target add https://github.com/owner/skills.git --name work -g
 ```
 
 ### 4. Install Skills

@@ -40,19 +40,121 @@ export async function uploadCommand(
 ): Promise<void> {
   const cwd = process.cwd()
   const config = loadConfig(cwd)
-  const target = getUploadTarget(config, options.target)
+  let target = getUploadTarget(config, options.target)
 
+  // ── 1. 没有上传目标时，交互式引导配置 ──
   if (!target) {
-    consola.error(options.target
-      ? `未找到上传目标: ${options.target}`
-      : '未配置上传目标，请先运行 skills upload target add <url> --name <name>')
-    process.exitCode = 1
-    return
+    if (options.target) {
+      consola.error(`未找到上传目标: ${options.target}`)
+      process.exitCode = 1
+      return
+    }
+
+    consola.info('未检测到上传目标配置，进入交互式配置流程...')
+    consola.log('')
+
+    const urlInput = await p.text({
+      message: '请输入 Git 远端 URL',
+      placeholder: 'https://github.com/user/skills-repo.git',
+      validate: (value) => {
+        if (!value.trim())
+          return '请输入有效的 Git 远端 URL'
+      },
+    })
+
+    if (p.isCancel(urlInput)) {
+      p.cancel('已取消')
+      return
+    }
+
+    const nameInput = await p.text({
+      message: '为上传目标起个名字',
+      placeholder: 'my-skills',
+      initialValue: extractRepoName(urlInput as string),
+      validate: (value) => {
+        if (!value.trim())
+          return '请输入上传目标名称'
+      },
+    })
+
+    if (p.isCancel(nameInput)) {
+      p.cancel('已取消')
+      return
+    }
+
+    const pathInput = await p.text({
+      message: '目标仓库内 skills 所在子目录',
+      placeholder: 'skills',
+      initialValue: 'skills',
+    })
+
+    if (p.isCancel(pathInput)) {
+      p.cancel('已取消')
+      return
+    }
+
+    const saveScope = await p.select({
+      message: '将目标保存到哪个配置？',
+      options: [
+        { value: 'project', label: '项目级', hint: '.skillsrc' },
+        { value: 'global', label: '全局级', hint: '~/.config/skills-cli/.skillsrc' },
+      ],
+    })
+
+    if (p.isCancel(saveScope)) {
+      p.cancel('已取消')
+      return
+    }
+
+    const newTarget: UploadTargetConfig = {
+      name: (nameInput as string).trim(),
+      type: 'git',
+      url: (urlInput as string).trim(),
+      path: (pathInput as string).trim() || 'skills',
+    }
+
+    const isGlobal = saveScope === 'global'
+    const configPath = isGlobal
+      ? getGlobalConfigPath()
+      : getProjectConfigPathForWrite(cwd)
+    const existingConfig = loadConfigAtPath(configPath)
+    const result = addUploadTargetToConfig(existingConfig, newTarget)
+
+    if (result.added) {
+      saveConfig(result.config, configPath)
+      consola.success(`已保存上传目标: ${pc.cyan(newTarget.name)}`)
+      consola.info(`配置文件: ${pc.dim(configPath)}`)
+      consola.log('')
+    }
+
+    target = newTarget
+  }
+
+  // ── 2. 收集要上传的 skills ──
+  const shouldPrompt = !options.all && (!names || names.length === 0)
+  let uploadGlobal = options.global ?? false
+
+  // 没有指定 skill names 时，先选择扫描范围
+  if (shouldPrompt) {
+    const scope = await p.select({
+      message: '选择要上传的 skills 来源',
+      options: [
+        { value: 'project', label: '项目级 skills', hint: '当前项目目录' },
+        { value: 'global', label: '全局 skills', hint: '用户目录' },
+      ],
+    })
+
+    if (p.isCancel(scope)) {
+      p.cancel('已取消')
+      return
+    }
+
+    uploadGlobal = scope === 'global'
   }
 
   const collected = collectUploadSkills({
     cwd,
-    global: options.global ?? false,
+    global: uploadGlobal,
     names,
   })
 
@@ -62,11 +164,10 @@ export async function uploadCommand(
     consola.warn(`未找到本地 skill: ${missing}`)
 
   let selectedSkills = collected.skills
-  const shouldPrompt = !options.all && (!names || names.length === 0)
 
   if (shouldPrompt) {
     if (selectedSkills.length === 0) {
-      consola.info(options.global ? '未找到全局已安装的 skills' : '未找到本地已安装的 skills')
+      consola.info(uploadGlobal ? '未找到全局已安装的 skills' : '未找到本地已安装的 skills')
       return
     }
 
@@ -96,6 +197,7 @@ export async function uploadCommand(
     return
   }
 
+  // ── 3. 执行上传 ──
   const normalizedTarget = normalizeUploadTarget(target)
   consola.info(`上传目标: ${pc.cyan(normalizedTarget.name)} ${pc.dim(normalizedTarget.url)}`)
   consola.info(`目标目录: ${pc.cyan(normalizedTarget.path ?? 'skills')}`)
@@ -106,28 +208,28 @@ export async function uploadCommand(
       consola.log(`  ${pc.green(skill.name)} ${pc.dim(skill.path)}`)
   }
 
-  const result = uploadSkills({
+  const uploadResult = uploadSkills({
     cwd,
     dryRun: options.dryRun,
-    global: options.global ?? false,
+    global: uploadGlobal,
     message: options.message,
     skills: selectedSkills,
     target: normalizedTarget,
   })
 
-  if (!result.changed) {
+  if (!uploadResult.changed) {
     consola.info('无需上传：目标仓库没有文件变化')
     return
   }
 
-  if (result.dryRun) {
-    consola.success(`计划上传 ${pc.bold(String(result.uploaded.length))} 个 skills`)
+  if (uploadResult.dryRun) {
+    consola.success(`计划上传 ${pc.bold(String(uploadResult.uploaded.length))} 个 skills`)
     return
   }
 
-  consola.success(`已上传 ${pc.bold(String(result.uploaded.length))} 个 skills`)
-  if (result.commit)
-    consola.info(`提交: ${pc.cyan(result.commit)}`)
+  consola.success(`已上传 ${pc.bold(String(uploadResult.uploaded.length))} 个 skills`)
+  if (uploadResult.commit)
+    consola.info(`提交: ${pc.cyan(uploadResult.commit)}`)
 }
 
 export async function uploadTargetAddCommand(
@@ -160,4 +262,13 @@ export async function uploadTargetAddCommand(
   saveConfig(result.config, configPath)
   consola.success(`已添加上传目标: ${pc.cyan(name)}`)
   consola.info(`配置文件: ${pc.dim(configPath)}`)
+}
+
+/**
+ * 从 Git URL 提取仓库名作为默认目标名称
+ */
+function extractRepoName(url: string): string {
+  const cleaned = url.replace(/\.git$/, '').replace(/\/+$/, '')
+  const lastSegment = cleaned.split('/').pop() ?? ''
+  return lastSegment || 'my-skills'
 }
