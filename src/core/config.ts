@@ -41,6 +41,14 @@ export function findProjectConfigPath(cwd?: string): string | undefined {
 }
 
 /**
+ * 获取项目级配置文件写入路径
+ * 优先复用向上找到的 .skillsrc，否则写入当前目录
+ */
+export function getProjectConfigPathForWrite(cwd?: string): string {
+  return findProjectConfigPath(cwd) ?? join(resolve(cwd || process.cwd()), CONFIG_FILENAME)
+}
+
+/**
  * 获取用户级配置文件路径
  */
 export function getGlobalConfigPath(): string {
@@ -66,6 +74,17 @@ export function loadConfig(cwd?: string): SkillsConfig {
   }
 
   return defaultConfig
+}
+
+/**
+ * 加载指定路径的配置；文件不存在时返回默认配置
+ */
+export function loadConfigAtPath(path: string): SkillsConfig {
+  const defaultConfig = getDefaultConfig()
+  if (!existsSync(path))
+    return defaultConfig
+
+  return mergeConfig(defaultConfig, readConfigFile(path))
 }
 
 /**

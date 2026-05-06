@@ -1,6 +1,8 @@
 import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { parseSourceUrl, sourceAddCommand } from '~/commands/source'
+import { getAgentById } from '~/core/agents'
 import { loadConfig } from '~/core/config'
 import { installSkill } from '~/core/installer'
 import { parseSkillMeta, scanLocalSkills } from '~/core/scanner'
@@ -49,6 +51,65 @@ describe('config', () => {
       { type: 'skills-sh', url: 'https://skills.sh' },
       { type: 'github', repo: 'antfu/skills', path: 'skills' },
     ])
+  })
+})
+
+// ───────────────────────────────────────────
+// source command
+// ───────────────────────────────────────────
+describe('source command', () => {
+  it('解析 github 仓库 URL 为可搜索下载的数据源', () => {
+    expect(parseSourceUrl('https://github.com/owner/repo/tree/main/skills/vue')).toEqual({
+      type: 'github',
+      repo: 'owner/repo',
+      path: 'skills/vue',
+    })
+  })
+
+  it('解析 github 简写并支持 path 覆盖', () => {
+    expect(parseSourceUrl('github:owner/repo/examples', { path: 'skills' })).toEqual({
+      type: 'github',
+      repo: 'owner/repo',
+      path: 'skills',
+    })
+  })
+
+  it('解析无协议 github URL', () => {
+    expect(parseSourceUrl('github.com/owner/repo/tree/main/skills')).toEqual({
+      type: 'github',
+      repo: 'owner/repo',
+      path: 'skills',
+    })
+  })
+
+  it('解析 skills.sh URL 为搜索数据源', () => {
+    expect(parseSourceUrl('https://skills.sh/picks')).toEqual({
+      type: 'skills-sh',
+      url: 'https://skills.sh',
+    })
+  })
+
+  it('添加 source 会写入项目级 .skillsrc 并避免重复', async () => {
+    const cwd = createTempDir()
+
+    await sourceAddCommand('https://github.com/owner/repo/tree/main/skills', { cwd })
+    await sourceAddCommand('github:owner/repo/skills', { cwd })
+
+    const config = loadConfig(cwd)
+    expect(config.sources.filter(source =>
+      source.type === 'github'
+      && source.repo === 'owner/repo'
+      && source.path === 'skills',
+    )).toHaveLength(1)
+  })
+})
+
+// ───────────────────────────────────────────
+// agents
+// ───────────────────────────────────────────
+describe('agents', () => {
+  it('antigravity 全局 skills 路径使用官方目录', () => {
+    expect(getAgentById('antigravity')?.globalDir).toBe('~/.gemini/antigravity/skills/')
   })
 })
 

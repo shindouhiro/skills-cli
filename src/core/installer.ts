@@ -51,6 +51,7 @@ export async function installSkill(options: InstallOptions): Promise<InstallResu
   let source = options.source
   let skillName = name
   let configSources: SourceConfig[] | undefined
+  let fallbackSources: SkillSource[] = []
   let canUseSkillsShFallback = false
 
   const parsed = parseGitHubUrl(name)
@@ -82,9 +83,13 @@ export async function installSkill(options: InstallOptions): Promise<InstallResu
     const config = loadConfig(cwd)
     configSources = config.sources
     canUseSkillsShFallback = true
-    const firstGitHub = config.sources.find(s => s.type === 'github')
-    if (firstGitHub && firstGitHub.type === 'github') {
-      source = createGitHubSource(firstGitHub.repo, firstGitHub.path)
+    const githubSources = config.sources
+      .filter((s): s is Extract<SourceConfig, { type: 'github' }> => s.type === 'github')
+      .map(item => createGitHubSource(item.repo, item.path))
+
+    if (githubSources.length > 0) {
+      source = githubSources[0]
+      fallbackSources = githubSources.slice(1)
     }
     else {
       source = createGitHubSource('antfu/skills', 'skills')
@@ -111,6 +116,7 @@ export async function installSkill(options: InstallOptions): Promise<InstallResu
     const downloadedDir = await downloadWithFallback({
       configSources,
       destDir: tmpDir,
+      fallbackSources,
       originalSource: source,
       skillName,
       useSkillsShFallback: canUseSkillsShFallback,
@@ -214,6 +220,7 @@ export async function installSkill(options: InstallOptions): Promise<InstallResu
 
 interface DownloadWithFallbackOptions {
   originalSource: SkillSource
+  fallbackSources?: SkillSource[]
   skillName: string
   destDir: string
   configSources?: SourceConfig[]
@@ -225,18 +232,28 @@ async function downloadWithFallback(options: DownloadWithFallbackOptions): Promi
     return await options.originalSource.download(options.skillName, options.destDir)
   }
   catch (err) {
-    if (!options.useSkillsShFallback)
-      throw err
+    for (const fallbackSource of options.fallbackSources ?? []) {
+      try {
+        consola.info(`正在尝试数据源: ${fallbackSource.name}`)
+        return await fallbackSource.download(options.skillName, options.destDir)
+      }
+      catch {
+        // 继续尝试后续数据源
+      }
+    }
 
-    const fallbackSource = await resolveSkillsShFallbackSource(
-      options.skillName,
-      options.configSources ?? [],
-    )
-    if (!fallbackSource)
-      throw err
+    if (options.useSkillsShFallback) {
+      const fallbackSource = await resolveSkillsShFallbackSource(
+        options.skillName,
+        options.configSources ?? [],
+      )
+      if (fallbackSource) {
+        consola.info(`已从 skills.sh 匹配到来源: ${fallbackSource.name}`)
+        return await fallbackSource.download(options.skillName, options.destDir)
+      }
+    }
 
-    consola.info(`已从 skills.sh 匹配到来源: ${fallbackSource.name}`)
-    return await fallbackSource.download(options.skillName, options.destDir)
+    throw err
   }
 }
 

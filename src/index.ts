@@ -1,4 +1,5 @@
 // Library 入口 — 导出核心 API 供编程式使用
+export { parseSourceUrl, sourceAddCommand } from '~/commands/source'
 export { AGENTS, expandHome, getAgentById, getAgentsByIds } from '~/core/agents'
 export { loadConfig, saveConfig } from '~/core/config'
 export { installSkill } from '~/core/installer'

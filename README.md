@@ -61,7 +61,15 @@ skills search vue
 skills s react --limit 20    # 限制只显示 20 条结果
 ```
 
-### 2. 安装技能
+### 2. 添加搜索/下载数据源
+你可以手动把 GitHub 仓库或 skills.sh 地址加入 `.skillsrc`，后续 `search` 和按名称 `install` 都会使用这些数据源：
+```bash
+skills source add https://github.com/owner/repo/tree/main/skills
+skills source add https://github.com/owner/repo -p skills
+skills sources add https://skills.sh -g    # 写入全局配置
+```
+
+### 3. 安装技能
 安装指定技能时，默认会弹出支持输入过滤的助手多选；配置中的 `defaultAgents` 会作为预选项：
 ```bash
 skills install vue-testing-best-practices
@@ -87,13 +95,13 @@ skills i vue-testing -g
 skills i vue-testing -i
 ```
 
-### 3. 查看已安装
+### 4. 查看已安装
 ```bash
 skills list
 skills ls -g
 ```
 
-### 4. 卸载技能
+### 5. 卸载技能
 
 直接指定名称删除：
 ```bash
@@ -117,6 +125,7 @@ skills rm -g -f testing       # 全局技能中过滤 "testing"
 | 指令 | 别名 | 描述 | 选项 |
 | :--- | :--- | :--- | :--- |
 | `search <keyword>` | `s` | 从 skills.sh 和配置的数据源搜索可用 skills（默认显示全部结果） | `-l, --limit <count>`: 限制最大显示数量 |
+| `source add <url>` | `sources add` | 手动添加搜索/下载数据源 URL | `-g, --global`: 写入全局配置<br>`-p, --path <path>`: GitHub 仓库内 skills 所在子目录 |
 | `install <name>` | `i`, `add` | 安装指定的 skill | `-a, --agent [agents]`: 指定目标助手 (逗号分隔；不传值则弹选择)<br>`-g, --global`: 安装到全局用户目录<br>`-f, --force`: 强制覆盖已存在的 skill<br>`-l, --link`: 使用符号链接模式 (推荐)<br>`-i, --interactive`: 显式进入交互式选择模式 |
 | `list` | `ls` | 列出已安装的 skills | `-g, --global`: 列出全局已安装的 skills |
 | `uninstall [name]` | `u`, `remove`, `rm`, `delete` | 卸载 skill（不传 name 进入多选模式） | `-a, --agent <agents>`: 指定目标助手<br>`-g, --global`: 从全局目录删除<br>`-f, --filter <keyword>`: 按关键字过滤 skills 列表 |

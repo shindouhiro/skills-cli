@@ -6,7 +6,7 @@ import process from 'node:process'
  */
 export const AGENTS: AgentDefinition[] = [
   { name: 'Amp / Kimi Code CLI', id: 'amp', projectDir: '.agents/skills/', globalDir: '~/.config/agents/skills/' },
-  { name: 'Antigravity', id: 'antigravity', projectDir: '.agent/skills/', globalDir: '~/.gemini/antigravity/global_skills/' },
+  { name: 'Antigravity', id: 'antigravity', projectDir: '.agent/skills/', globalDir: '~/.gemini/antigravity/skills/' },
   { name: 'Claude Code', id: 'claude-code', projectDir: '.claude/skills/', globalDir: '~/.claude/skills/' },
   { name: 'Moltbot', id: 'moltbot', projectDir: 'skills/', globalDir: '~/.moltbot/skills/' },
   { name: 'Cline', id: 'cline', projectDir: '.cline/skills/', globalDir: '~/.cline/skills/' },

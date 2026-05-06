@@ -174,7 +174,6 @@ function createSourcesFromConfig(configs: SourceConfig[]): SkillSource[] {
         return createGitHubSource(c.repo, c.path)
       if (c.type === 'skills-sh')
         return createSkillsShSource(c.url)
-      // TODO: npm source, url source
       return null
     })
     .filter((s): s is SkillSource => s !== null)

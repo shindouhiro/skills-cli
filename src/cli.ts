@@ -7,6 +7,7 @@ import { initCommand } from '~/commands/init'
 import { installCommand } from '~/commands/install'
 import { listCommand } from '~/commands/list'
 import { searchCommand } from '~/commands/search'
+import { sourceAddCommand } from '~/commands/source'
 import { uninstallCommand } from '~/commands/uninstall'
 import { version } from '../package.json'
 
@@ -78,6 +79,25 @@ cli
   .option('-g, --global', '初始化全局配置')
   .action(async (options: { global?: boolean }) => {
     await initCommand(options)
+  })
+
+// === source ===
+cli
+  .command('source add <url>', '手动添加搜索/下载数据源 URL')
+  .option('-g, --global', '添加到全局配置')
+  .option('-p, --path <path>', 'GitHub 仓库内 skills 所在子目录')
+  .action(async (url: string, options: { global?: boolean, path?: string }) => {
+    showBanner()
+    await sourceAddCommand(url, options)
+  })
+
+cli
+  .command('sources add <url>', '手动添加搜索/下载数据源 URL')
+  .option('-g, --global', '添加到全局配置')
+  .option('-p, --path <path>', 'GitHub 仓库内 skills 所在子目录')
+  .action(async (url: string, options: { global?: boolean, path?: string }) => {
+    showBanner()
+    await sourceAddCommand(url, options)
   })
 
 // === Global options ===

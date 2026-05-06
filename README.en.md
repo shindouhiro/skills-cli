@@ -61,7 +61,15 @@ skills search vue
 skills s react --limit 20    # Limit to 20 results
 ```
 
-### 2. Install Skills
+### 2. Add Search/Download Sources
+You can manually add a GitHub repository or skills.sh URL to `.skillsrc`; later `search` and name-based `install` commands will use those sources:
+```bash
+skills source add https://github.com/owner/repo/tree/main/skills
+skills source add https://github.com/owner/repo -p skills
+skills sources add https://skills.sh -g    # write to global config
+```
+
+### 3. Install Skills
 Install a skill with a filterable assistant multi-select prompt by default; `defaultAgents` are used as preselected choices:
 ```bash
 skills install vue-testing-best-practices
@@ -87,13 +95,13 @@ Explicitly enter filterable interactive assistant selection:
 skills i vue-testing -i
 ```
 
-### 3. List Installed
+### 4. List Installed
 ```bash
 skills list
 skills ls -g
 ```
 
-### 4. Uninstall Skills
+### 5. Uninstall Skills
 
 Uninstall by name directly:
 ```bash
@@ -117,6 +125,7 @@ skills rm -g -f testing       # filter "testing" in global skills
 | Command | Aliases | Description | Options |
 | :--- | :--- | :--- | :--- |
 | `search <keyword>` | `s` | Search available skills from skills.sh and configured sources (all results shown by default) | `-l, --limit <count>`: Limit max results to show |
+| `source add <url>` | `sources add` | Manually add a search/download source URL | `-g, --global`: Write to global config<br>`-p, --path <path>`: Subdirectory containing skills in a GitHub repository |
 | `install <name>` | `i`, `add` | Install a skill | `-a, --agent [agents]`: Target assistants (comma-separated; without a value, opens the prompt)<br>`-g, --global`: Install to global directory<br>`-f, --force`: Force overwrite existing skill<br>`-l, --link`: Use symlink mode (recommended)<br>`-i, --interactive`: Explicitly enter interactive selection |
 | `list` | `ls` | List installed skills | `-g, --global`: List globally installed skills |
 | `uninstall [name]` | `u`, `remove`, `rm`, `delete` | Uninstall skill (omit name for multi-select mode) | `-a, --agent <agents>`: Target assistants<br>`-g, --global`: Remove from global directory<br>`-f, --filter <keyword>`: Filter skills list by keyword |
