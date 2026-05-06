@@ -30,6 +30,7 @@
 - 📦 **Multi-assistant Support**: Automatically detects and installs to 30+ mainstream AI assistants.
 - 🔗 **Smart Sharing**: Uses symlinks by default — one copy shared across all assistants, saving space and staying in sync.
 - 🔍 **Easy Search**: Searches [skills.sh](https://skills.sh/) by default, plus any configured GitHub sources.
+- ⬆️ **Local Uploads**: Upload locally installed skills to your own GitHub repository or any Git remote.
 - 🗑️ **Interactive Uninstall**: Run without arguments to enter multi-select mode — browse all installed skills and batch delete.
 - 🔎 **Keyword Filtering**: Filter skills by keyword when uninstalling — via `--filter` flag or interactive input.
 - 🛠️ **Highly Configurable**: Supports project-level and global `.skillsrc` configuration files.
@@ -69,7 +70,26 @@ skills source add https://github.com/owner/repo -p skills
 skills sources add https://skills.sh -g    # write to global config
 ```
 
-### 3. Install Skills
+### 3. Add Upload Targets
+Configure a Git upload target before uploading local skills to your own GitHub repository or another Git remote:
+```bash
+skills upload target add git@github.com:owner/skills.git --name personal -p skills
+skills upload target add https://github.com/owner/skills.git --name personal -g
+```
+
+Upload installed project skills:
+```bash
+skills upload --all
+skills upload vue-testing-best-practices --target personal
+skills upload --dry-run
+```
+
+Upload global user-level skills:
+```bash
+skills upload --all -g
+```
+
+### 4. Install Skills
 Install a skill with a filterable assistant multi-select prompt by default; `defaultAgents` are used as preselected choices:
 ```bash
 skills install vue-testing-best-practices
@@ -95,13 +115,13 @@ Explicitly enter filterable interactive assistant selection:
 skills i vue-testing -i
 ```
 
-### 4. List Installed
+### 5. List Installed
 ```bash
 skills list
 skills ls -g
 ```
 
-### 5. Uninstall Skills
+### 6. Uninstall Skills
 
 Uninstall by name directly:
 ```bash
@@ -126,6 +146,8 @@ skills rm -g -f testing       # filter "testing" in global skills
 | :--- | :--- | :--- | :--- |
 | `search <keyword>` | `s` | Search available skills from skills.sh and configured sources (all results shown by default) | `-l, --limit <count>`: Limit max results to show |
 | `source add <url>` | `sources add` | Manually add a search/download source URL | `-g, --global`: Write to global config<br>`-p, --path <path>`: Subdirectory containing skills in a GitHub repository |
+| `upload [names...]` | - | Upload local skills to a configured Git remote | `-a, --all`: Upload all<br>`-t, --target <name>`: Upload target name<br>`-g, --global`: Upload global skills<br>`-d, --dry-run`: Preview only<br>`-m, --message <message>`: Custom commit message |
+| `upload target add <url>` | - | Add a Git upload target | `-g, --global`: Write to global config<br>`-n, --name <name>`: Upload target name<br>`-p, --path <path>`: Skills subdirectory in the target repository<br>`-b, --branch <branch>`: Target branch |
 | `install <name>` | `i`, `add` | Install a skill | `-a, --agent [agents]`: Target assistants (comma-separated; without a value, opens the prompt)<br>`-g, --global`: Install to global directory<br>`-f, --force`: Force overwrite existing skill<br>`-l, --link`: Use symlink mode (recommended)<br>`-i, --interactive`: Explicitly enter interactive selection |
 | `list` | `ls` | List installed skills | `-g, --global`: List globally installed skills |
 | `uninstall [name]` | `u`, `remove`, `rm`, `delete` | Uninstall skill (omit name for multi-select mode) | `-a, --agent <agents>`: Target assistants<br>`-g, --global`: Remove from global directory<br>`-f, --filter <keyword>`: Filter skills list by keyword |
@@ -175,11 +197,24 @@ Create a config file with `skills init`.
       "repo": "antfu/skills",
       "path": "skills"
     }
-  ]
+  ],
+  "upload": {
+    "defaultTarget": "personal",
+    "targets": [
+      {
+        "name": "personal",
+        "type": "git",
+        "url": "git@github.com:owner/skills.git",
+        "path": "skills"
+      }
+    ]
+  }
 }
 ```
 
 `skills.sh` is the default search source. Even if your project-level or global `.skillsrc` customizes `sources`, the CLI automatically adds `skills.sh` so `skills search <keyword>` can search the public skill directory out of the box.
+
+`upload.targets` use Git remote URLs. Authentication is handled by your local Git environment, such as SSH keys, Git credential helpers, or GitHub token HTTPS credentials. When `path` is omitted, uploads go to the target repository's `skills` directory. `branch` is optional; when omitted, the remote default branch is used.
 
 ## 📄 License
 

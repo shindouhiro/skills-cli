@@ -9,6 +9,7 @@ import { listCommand } from '~/commands/list'
 import { searchCommand } from '~/commands/search'
 import { sourceAddCommand } from '~/commands/source'
 import { uninstallCommand } from '~/commands/uninstall'
+import { uploadCommand, uploadTargetAddCommand } from '~/commands/upload'
 import { version } from '../package.json'
 
 const cli = cac('skills')
@@ -91,13 +92,28 @@ cli
     await sourceAddCommand(url, options)
   })
 
+// === upload ===
 cli
-  .command('sources add <url>', '手动添加搜索/下载数据源 URL')
+  .command('upload target add <url>', '添加 Git 上传目标')
   .option('-g, --global', '添加到全局配置')
-  .option('-p, --path <path>', 'GitHub 仓库内 skills 所在子目录')
-  .action(async (url: string, options: { global?: boolean, path?: string }) => {
+  .option('-n, --name <name>', '上传目标名称')
+  .option('-p, --path <path>', '目标仓库内 skills 所在子目录（默认 skills）')
+  .option('-b, --branch <branch>', '目标分支；省略时使用远端默认分支')
+  .action(async (url: string, options: { branch?: string, global?: boolean, name?: string, path?: string }) => {
     showBanner()
-    await sourceAddCommand(url, options)
+    await uploadTargetAddCommand(url, options)
+  })
+
+cli
+  .command('upload [...names]', '上传本地 skills 到配置的 Git 远端')
+  .option('-a, --all', '上传全部本地 skills')
+  .option('-t, --target <name>', '上传目标名称')
+  .option('-g, --global', '上传全局（用户级）skills')
+  .option('-d, --dry-run', '仅展示上传计划，不 clone、commit 或 push')
+  .option('-m, --message <message>', '自定义 commit message')
+  .action(async (names: string[] | undefined, options: { all?: boolean, dryRun?: boolean, global?: boolean, message?: string, target?: string }) => {
+    showBanner()
+    await uploadCommand(names, options)
   })
 
 // === Global options ===
@@ -107,6 +123,11 @@ cli.option('-v, --version', 'Display version number')
 // === Run ===
 async function main(): Promise<void> {
   try {
+    if (isUploadTargetAddArgv(process.argv)) {
+      await runUploadTargetAddFromArgv(process.argv.slice(5))
+      return
+    }
+
     const parsed = cli.parse(process.argv, { run: false })
 
     if (parsed.options.version) {
@@ -132,3 +153,83 @@ async function main(): Promise<void> {
 }
 
 main()
+
+function isUploadTargetAddArgv(argv: string[]): boolean {
+  return argv[2] === 'upload' && argv[3] === 'target' && argv[4] === 'add'
+}
+
+async function runUploadTargetAddFromArgv(argv: string[]): Promise<void> {
+  if (argv.includes('--help') || argv.includes('-h')) {
+    printUploadTargetAddHelp()
+    return
+  }
+
+  const parsed = parseUploadTargetAddArgv(argv)
+  showBanner()
+  await uploadTargetAddCommand(parsed.url, parsed.options)
+}
+
+function parseUploadTargetAddArgv(argv: string[]): {
+  url: string
+  options: { branch?: string, global?: boolean, name?: string, path?: string }
+} {
+  const options: { branch?: string, global?: boolean, name?: string, path?: string } = {}
+  let url: string | undefined
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i]
+    if (arg === '-g' || arg === '--global') {
+      options.global = true
+      continue
+    }
+
+    if (arg === '-n' || arg === '--name') {
+      options.name = readOptionValue(argv, ++i, arg)
+      continue
+    }
+
+    if (arg === '-p' || arg === '--path') {
+      options.path = readOptionValue(argv, ++i, arg)
+      continue
+    }
+
+    if (arg === '-b' || arg === '--branch') {
+      options.branch = readOptionValue(argv, ++i, arg)
+      continue
+    }
+
+    if (arg.startsWith('-'))
+      throw new Error(`未知选项: ${arg}`)
+
+    if (url)
+      throw new Error(`未知参数: ${arg}`)
+
+    url = arg
+  }
+
+  if (!url)
+    throw new Error('缺少 Git 远端 URL')
+
+  return { options, url }
+}
+
+function readOptionValue(argv: string[], index: number, name: string): string {
+  const value = argv[index]
+  if (!value || value.startsWith('-'))
+    throw new Error(`选项 ${name} 缺少值`)
+  return value
+}
+
+function printUploadTargetAddHelp(): void {
+  consola.log('skills')
+  consola.log('')
+  consola.log('Usage:')
+  consola.log('  $ skills upload target add <url>')
+  consola.log('')
+  consola.log('Options:')
+  consola.log('  -g, --global           添加到全局配置')
+  consola.log('  -n, --name <name>      上传目标名称')
+  consola.log('  -p, --path <path>      目标仓库内 skills 所在子目录（默认 skills）')
+  consola.log('  -b, --branch <branch>  目标分支；省略时使用远端默认分支')
+  consola.log('  -h, --help             Display this message')
+}

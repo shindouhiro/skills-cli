@@ -66,6 +66,8 @@ export interface SkillsConfig {
   scope: 'project' | 'global'
   /** 安装模式：copy 会复制到每个助手目录，link 使用共享存储和符号链接 */
   installMode?: InstallMode
+  /** 上传配置 */
+  upload?: UploadConfig
 }
 
 /**
@@ -76,3 +78,29 @@ export type SourceConfig
     | { type: 'skills-sh', url?: string }
     | { type: 'npm', keyword: string }
     | { type: 'url', url: string }
+
+/**
+ * 上传配置
+ */
+export interface UploadConfig {
+  /** 默认上传目标名称 */
+  defaultTarget?: string
+  /** 上传目标列表 */
+  targets: UploadTargetConfig[]
+}
+
+/**
+ * Git 上传目标配置
+ */
+export interface UploadTargetConfig {
+  /** 目标名称 */
+  name: string
+  /** 上传目标类型 */
+  type: 'git'
+  /** Git 远端 URL */
+  url: string
+  /** 仓库内 skills 所在目录，默认 skills */
+  path?: string
+  /** 目标分支；省略时使用远端默认分支 */
+  branch?: string
+}

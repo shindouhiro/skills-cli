@@ -30,6 +30,7 @@
 - 📦 **多助手适配**：自动识别并安装到 30+ 种主流 AI 助手的配置目录。
 - 🔗 **智能共享**：默认使用符号链接（Symlink），一份存储多处共享，节省空间且同步更新。
 - 🔍 **便捷搜索**：默认接入 [skills.sh](https://skills.sh/) 和 GitHub 数据源，快速发现适合你项目的 AI 技能。
+- ⬆️ **本地上传**：把本地已安装的 skills 上传到你自己的 GitHub 或任意 Git 远端仓库。
 - 🗑️ **交互式删除**：不传参数自动进入多选模式，浏览全部已安装技能并批量删除。
 - 🔎 **关键字过滤**：删除时支持关键字过滤，快速定位目标技能（`--filter` 或交互式输入）。
 - 🛠️ **高度可配置**：支持项目级和全局配置文件 `.skillsrc`。
@@ -66,10 +67,29 @@ skills s react --limit 20    # 限制只显示 20 条结果
 ```bash
 skills source add https://github.com/owner/repo/tree/main/skills
 skills source add https://github.com/owner/repo -p skills
-skills sources add https://skills.sh -g    # 写入全局配置
+skills source add https://skills.sh -g    # 写入全局配置
 ```
 
-### 3. 安装技能
+### 3. 添加上传目标
+把本地 skills 上传到你自己的 GitHub 或其他 Git 远端前，先配置上传目标：
+```bash
+skills upload target add git@github.com:owner/skills.git --name personal -p skills
+skills upload target add https://github.com/owner/skills.git --name personal -g
+```
+
+上传当前项目已安装的 skills：
+```bash
+skills upload --all
+skills upload vue-testing-best-practices --target personal
+skills upload --dry-run
+```
+
+上传全局（用户级）skills：
+```bash
+skills upload --all -g
+```
+
+### 4. 安装技能
 安装指定技能时，默认会弹出支持输入过滤的助手多选；配置中的 `defaultAgents` 会作为预选项：
 ```bash
 skills install vue-testing-best-practices
@@ -95,13 +115,13 @@ skills i vue-testing -g
 skills i vue-testing -i
 ```
 
-### 4. 查看已安装
+### 5. 查看已安装
 ```bash
 skills list
 skills ls -g
 ```
 
-### 5. 卸载技能
+### 6. 卸载技能
 
 直接指定名称删除：
 ```bash
@@ -125,7 +145,9 @@ skills rm -g -f testing       # 全局技能中过滤 "testing"
 | 指令 | 别名 | 描述 | 选项 |
 | :--- | :--- | :--- | :--- |
 | `search <keyword>` | `s` | 从 skills.sh 和配置的数据源搜索可用 skills（默认显示全部结果） | `-l, --limit <count>`: 限制最大显示数量 |
-| `source add <url>` | `sources add` | 手动添加搜索/下载数据源 URL | `-g, --global`: 写入全局配置<br>`-p, --path <path>`: GitHub 仓库内 skills 所在子目录 |
+| `source add <url>` | - | 手动添加搜索/下载数据源 URL | `-g, --global`: 写入全局配置<br>`-p, --path <path>`: GitHub 仓库内 skills 所在子目录 |
+| `upload [names...]` | - | 上传本地 skills 到配置的 Git 远端 | `-a, --all`: 上传全部<br>`-t, --target <name>`: 上传目标名称<br>`-g, --global`: 上传全局 skills<br>`-d, --dry-run`: 仅展示计划<br>`-m, --message <message>`: 自定义提交信息 |
+| `upload target add <url>` | - | 添加 Git 上传目标 | `-g, --global`: 写入全局配置<br>`-n, --name <name>`: 上传目标名称<br>`-p, --path <path>`: 目标仓库内 skills 子目录<br>`-b, --branch <branch>`: 目标分支 |
 | `install <name>` | `i`, `add` | 安装指定的 skill | `-a, --agent [agents]`: 指定目标助手 (逗号分隔；不传值则弹选择)<br>`-g, --global`: 安装到全局用户目录<br>`-f, --force`: 强制覆盖已存在的 skill<br>`-l, --link`: 使用符号链接模式 (推荐)<br>`-i, --interactive`: 显式进入交互式选择模式 |
 | `list` | `ls` | 列出已安装的 skills | `-g, --global`: 列出全局已安装的 skills |
 | `uninstall [name]` | `u`, `remove`, `rm`, `delete` | 卸载 skill（不传 name 进入多选模式） | `-a, --agent <agents>`: 指定目标助手<br>`-g, --global`: 从全局目录删除<br>`-f, --filter <keyword>`: 按关键字过滤 skills 列表 |
@@ -175,11 +197,24 @@ skills rm -g -f testing       # 全局技能中过滤 "testing"
       "repo": "antfu/skills",
       "path": "skills"
     }
-  ]
+  ],
+  "upload": {
+    "defaultTarget": "personal",
+    "targets": [
+      {
+        "name": "personal",
+        "type": "git",
+        "url": "git@github.com:owner/skills.git",
+        "path": "skills"
+      }
+    ]
+  }
 }
 ```
 
 `skills.sh` 是默认搜索源。即使你的项目级或全局 `.skillsrc` 自定义了 `sources`，CLI 也会自动补上 `skills.sh`，确保 `skills search <keyword>` 默认可以搜索公开 skill 目录。
+
+`upload.targets` 使用 Git 远端 URL，鉴权由本机 Git 环境处理，例如 SSH key、Git credential helper 或 GitHub token HTTPS 凭据。`path` 省略时默认上传到目标仓库的 `skills` 目录；`branch` 可选，省略时使用远端默认分支。
 
 
 

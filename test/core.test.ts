@@ -1,7 +1,9 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync, lstatSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseSourceUrl, sourceAddCommand } from '~/commands/source'
+import { uploadTargetAddCommand } from '~/commands/upload'
 import { getAgentById } from '~/core/agents'
 import { loadConfig } from '~/core/config'
 import { installSkill } from '~/core/installer'
@@ -9,9 +11,10 @@ import { parseSkillMeta, scanLocalSkills } from '~/core/scanner'
 import { isSafeSkillName, parseSkillPath } from '~/core/skill-name'
 import { getStoreSkillDir } from '~/core/store'
 import { uninstallSkill } from '~/core/uninstaller'
+import { collectUploadSkills, getUploadTarget, uploadSkills } from '~/core/upload'
 import { findSkillPrefix, parseGitHubUrl } from '~/sources/github'
 import { parseSkillsShSitemap, parseSkillsShSource, parseSkillsShUrl } from '~/sources/skills-sh'
-import { testAgents as agents, createSource, createTempDir } from './helpers'
+import { testAgents as agents, createSource, createTempDir, installTestSkills } from './helpers'
 
 // ───────────────────────────────────────────
 // config
@@ -51,6 +54,35 @@ describe('config', () => {
       { type: 'skills-sh', url: 'https://skills.sh' },
       { type: 'github', repo: 'antfu/skills', path: 'skills' },
     ])
+  })
+
+  it('加载 upload 配置并能解析默认上传目标', () => {
+    const root = createTempDir()
+    writeFileSync(
+      join(root, '.skillsrc'),
+      JSON.stringify({
+        upload: {
+          defaultTarget: 'personal',
+          targets: [
+            {
+              name: 'personal',
+              path: 'skills',
+              type: 'git',
+              url: 'git@github.com:owner/skills.git',
+            },
+          ],
+        },
+      }),
+      'utf-8',
+    )
+
+    const config = loadConfig(root)
+    expect(getUploadTarget(config)).toEqual({
+      name: 'personal',
+      path: 'skills',
+      type: 'git',
+      url: 'git@github.com:owner/skills.git',
+    })
   })
 })
 
@@ -101,6 +133,150 @@ describe('source command', () => {
       && source.repo === 'owner/repo'
       && source.path === 'skills',
     )).toHaveLength(1)
+  })
+})
+
+// ───────────────────────────────────────────
+// upload
+// ───────────────────────────────────────────
+describe('upload', () => {
+  it('添加 upload target 会写入项目级 .skillsrc 并避免重复名称', async () => {
+    const cwd = createTempDir()
+
+    await uploadTargetAddCommand('git@github.com:owner/skills.git', {
+      cwd,
+      name: 'personal',
+      path: 'skills',
+    })
+    await uploadTargetAddCommand('git@github.com:owner/other.git', {
+      cwd,
+      name: 'personal',
+      path: 'other',
+    })
+
+    const config = loadConfig(cwd)
+    expect(config.upload).toEqual({
+      defaultTarget: 'personal',
+      targets: [
+        {
+          name: 'personal',
+          path: 'skills',
+          type: 'git',
+          url: 'git@github.com:owner/skills.git',
+        },
+      ],
+    })
+  })
+
+  it('收集本地 skills 时按名称过滤并报告缺失项', async () => {
+    const cwd = createTempDir()
+    await installTestSkills(cwd, ['upload-one', 'upload-two'])
+
+    const result = collectUploadSkills({
+      cwd,
+      global: false,
+      names: ['upload-two', 'missing-skill'],
+    })
+
+    expect(result.skills.map(skill => skill.name)).toEqual(['upload-two'])
+    expect(result.missing).toEqual(['missing-skill'])
+  })
+
+  it('同名 skill 内容不同且存在 store 时优先上传 store 版本', async () => {
+    const cwd = createTempDir()
+
+    await installSkill({
+      agents: [agents[0]],
+      cwd,
+      global: false,
+      mode: 'link',
+      name: 'duplicated-skill',
+      source: createSource({ 'store.txt': 'store' }),
+    })
+    await installSkill({
+      agents: [agents[1]],
+      cwd,
+      global: false,
+      mode: 'copy',
+      name: 'duplicated-skill',
+      source: createSource({ 'copy.txt': 'copy' }),
+    })
+
+    const result = collectUploadSkills({
+      cwd,
+      global: false,
+      names: ['duplicated-skill'],
+    })
+
+    expect(result.skills[0].path).toBe(getStoreSkillDir('duplicated-skill', { cwd, global: false }))
+    expect(result.warnings[0]).toContain('检测到多个助手中存在不同内容')
+  })
+
+  it('dry-run 不会访问 Git 远端', async () => {
+    const cwd = createTempDir()
+    await installTestSkills(cwd, ['dry-run-skill'])
+    const collected = collectUploadSkills({ cwd, global: false, names: ['dry-run-skill'] })
+
+    const result = uploadSkills({
+      cwd,
+      dryRun: true,
+      global: false,
+      skills: collected.skills,
+      target: {
+        name: 'broken',
+        type: 'git',
+        url: 'ssh://invalid.example.com/repo.git',
+      },
+    })
+
+    expect(result).toMatchObject({
+      changed: true,
+      dryRun: true,
+      uploaded: ['dry-run-skill'],
+    })
+  })
+
+  it('能上传 skill 到本地 Git 远端，且无变化时不创建提交', async () => {
+    const cwd = createTempDir()
+    const remote = join(cwd, 'remote.git')
+    const checkout = join(cwd, 'checkout')
+
+    execFileSync('git', ['init', '--bare', remote], { stdio: 'ignore' })
+    await installTestSkills(cwd, ['git-upload-skill'])
+    const collected = collectUploadSkills({ cwd, global: false, names: ['git-upload-skill'] })
+
+    const first = uploadSkills({
+      cwd,
+      global: false,
+      skills: collected.skills,
+      target: {
+        name: 'local',
+        path: 'skills',
+        type: 'git',
+        url: remote,
+      },
+    })
+
+    expect(first.changed).toBe(true)
+    expect(first.commit).toBeTruthy()
+
+    execFileSync('git', ['clone', remote, checkout], { stdio: 'ignore' })
+    expect(existsSync(join(checkout, 'skills', 'git-upload-skill', 'SKILL.md'))).toBe(true)
+
+    const second = uploadSkills({
+      cwd,
+      global: false,
+      skills: collected.skills,
+      target: {
+        name: 'local',
+        path: 'skills',
+        type: 'git',
+        url: remote,
+      },
+    })
+
+    expect(second.changed).toBe(false)
+    expect(second.commit).toBeUndefined()
   })
 })
 
