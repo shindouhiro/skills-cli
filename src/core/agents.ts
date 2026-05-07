@@ -19,7 +19,7 @@ export const AGENTS: AgentDefinition[] = [
   { name: 'Goose', id: 'goose', projectDir: '.goose/skills/', globalDir: '~/.config/goose/skills/', icon: 'ai:goose' },
   { name: 'Junie', id: 'junie', projectDir: '.junie/skills/', globalDir: '~/.junie/skills/', icon: 'ai:junie-color' },
   { name: 'Kilo Code', id: 'kilo', projectDir: '.kilocode/skills/', globalDir: '~/.kilocode/skills/', icon: 'ai:kilocode' },
-  { name: 'Kiro CLI', id: 'kiro-cli', projectDir: '.kiro/skills/', globalDir: '~/.kiro/skills/', icon: 'lucide:key' },
+  { name: 'Kiro CLI', id: 'kiro-cli', projectDir: '.kiro/skills/', globalDir: '~/.kiro/skills/', icon: 'ai:kiro-color' },
   { name: 'Kode', id: 'kode', projectDir: '.kode/skills/', globalDir: '~/.kode/skills/', icon: 'lucide:code-2' },
   { name: 'MCPJam', id: 'mcpjam', projectDir: '.mcpjam/skills/', globalDir: '~/.mcpjam/skills/', icon: 'lucide:music' },
   { name: 'Mux', id: 'mux', projectDir: '.mux/skills/', globalDir: '~/.mux/skills/', icon: 'lucide:layers' },

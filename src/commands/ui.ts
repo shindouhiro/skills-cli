@@ -45,7 +45,8 @@ export async function uiCommand(options: { port?: number } = {}) {
     }
 
     if (req.method === 'GET' && pathname === '/api/agents') {
-      return jsonResponse(AGENTS)
+      const config = loadConfig(cwd)
+      return jsonResponse({ agents: AGENTS, defaultAgents: config.defaultAgents || [] })
     }
 
     if (req.method === 'GET' && pathname === '/api/skills') {

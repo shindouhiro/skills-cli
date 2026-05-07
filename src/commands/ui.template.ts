@@ -53,6 +53,7 @@ export const HTML_CONTENT = `
       setup() {
         const activeTab = ref('installed')
         const agents = ref([])
+        const defaultAgentIds = ref([])
         const localSkills = ref({})
         const globalSkills = ref({})
         const keyword = ref('')
@@ -97,7 +98,9 @@ export const HTML_CONTENT = `
 
         async function fetchAgents() {
           const res = await fetch('/api/agents')
-          agents.value = await res.json()
+          const data = await res.json()
+          agents.value = data.agents || data
+          defaultAgentIds.value = data.defaultAgents || []
         }
 
         async function fetchSkills() {
@@ -122,7 +125,13 @@ export const HTML_CONTENT = `
 
         function openInstallModal(name, global) {
           installData.value = { name, global }
-          selectedAgents.value = agents.value.map(a => a.id) // Default select all
+          const withIcons = agents.value.filter(a => a.icon && a.icon.startsWith('ai:'))
+          if (defaultAgentIds.value.length > 0) {
+            selectedAgents.value = defaultAgentIds.value.filter(id => withIcons.some(a => a.id === id))
+          }
+          if (selectedAgents.value.length === 0 && withIcons.length > 0) {
+            selectedAgents.value = [withIcons[0].id]
+          }
           agentFilter.value = ''
           showInstallModal.value = true
         }
@@ -383,7 +392,7 @@ export const HTML_CONTENT = `
           </header>
 
           <!-- Content -->
-          <main class="flex-1 overflow-y-auto p-8 relative">
+          <main class="flex-1 overflow-y-auto overflow-x-hidden p-8 relative">
              <div v-if="activeTab === 'installed'" class="w-full space-y-12 animate-fade-in pb-10">
                 <section>
                   <div class="flex items-center gap-3 mb-6">
@@ -486,21 +495,24 @@ export const HTML_CONTENT = `
                  <div class="text-emerald-400 font-medium tracking-widest text-lg">SEARCHING...</div>
                </div>
                
-               <div v-else-if="searchResults.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-                 <div v-for="s in searchResults" :key="s.name" class="glass p-6 rounded-2xl flex flex-col group hover:border-emerald-500/30 transition-all duration-300 border border-slate-700/50 h-full">
-                   <div class="flex items-start justify-between mb-3">
-                     <h3 class="font-bold text-xl text-emerald-300 truncate pr-4">{{ s.name }}</h3>
-                     <span class="text-xs font-mono text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/50 whitespace-nowrap shrink-0">{{ s.source }}</span>
+               <div v-else-if="searchResults.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 w-full">
+                 <div v-for="s in searchResults" :key="s.name" class="glass p-6 rounded-2xl flex flex-col group hover:border-emerald-500/30 transition-all duration-300 border border-slate-700/50 h-full min-w-0 overflow-hidden">
+                   <div class="flex items-start justify-between mb-3 min-w-0">
+                     <h3 class="font-bold text-xl text-emerald-300 truncate pr-4 min-w-0">{{ s.name }}</h3>
+                     <div class="relative group/src shrink-0">
+                       <span class="text-xs font-mono text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/50 whitespace-nowrap block max-w-[140px] truncate">{{ s.source }}</span>
+                       <div class="absolute right-0 top-full mt-1.5 px-3 py-1.5 text-xs text-slate-200 bg-slate-900/95 border border-slate-600 rounded-lg shadow-2xl opacity-0 group-hover/src:opacity-100 transition-opacity duration-200 pointer-events-none z-30 whitespace-nowrap backdrop-blur-sm">{{ s.source }}</div>
+                     </div>
                    </div>
                    <p class="text-slate-400 leading-relaxed flex-1 mb-6 text-sm line-clamp-3">{{ s.description }}</p>
-                   <div class="flex gap-3 justify-end mt-auto pt-4 border-t border-slate-800">
-                     <button @click="openInstallModal(s.name, false)" class="relative group/btn bg-slate-800 hover:bg-slate-700 text-slate-300 w-10 h-10 flex items-center justify-center rounded-xl font-medium transition-all shadow-sm border border-slate-700 hover:border-slate-600">
-                       <iconify-icon icon="lucide:download" class="text-xl"></iconify-icon>
-                       <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 text-xs font-medium text-white bg-slate-900 rounded-lg shadow-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-slate-700/50 z-10">本地安装</div>
+                   <div class="flex gap-2 justify-end mt-auto pt-4 border-t border-slate-800">
+                     <button @click="openInstallModal(s.name, false)" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-xs font-medium transition-all border border-slate-700 hover:border-slate-600">
+                       <iconify-icon icon="lucide:folder-down" class="text-base"></iconify-icon>
+                       <span>本地</span>
                      </button>
-                     <button @click="openInstallModal(s.name, true)" class="relative group/btn bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-900 w-10 h-10 flex items-center justify-center border border-emerald-500/20 hover:border-transparent rounded-xl font-medium transition-all shadow-sm">
-                       <iconify-icon icon="lucide:globe" class="text-xl"></iconify-icon>
-                       <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 text-xs font-medium text-white bg-slate-900 rounded-lg shadow-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-slate-700/50 z-10">全局安装</div>
+                     <button @click="openInstallModal(s.name, true)" class="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-900 px-3 py-2 border border-emerald-500/20 hover:border-transparent rounded-xl text-xs font-medium transition-all">
+                       <iconify-icon icon="lucide:earth" class="text-base"></iconify-icon>
+                       <span>全局</span>
                      </button>
                    </div>
                  </div>
