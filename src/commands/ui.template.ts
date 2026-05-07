@@ -190,9 +190,50 @@ export const HTML_CONTENT = `
         const targetFormData = ref({ name: '', url: '', path: 'skills', branch: '', global: false })
         const isSavingTarget = ref(false)
 
+        const targetSkillsData = ref({})
+
+        async function fetchTargetSkills(targetName, global) {
+          targetSkillsData.value[targetName] = { skills: [], loading: true, error: null }
+          try {
+            const res = await fetch(\`/api/targets/skills?targetName=\${encodeURIComponent(targetName)}&global=\${global}\`)
+            const data = await res.json()
+            if (data.success) {
+              targetSkillsData.value[targetName] = { skills: data.skills, loading: false, error: null }
+            } else {
+              targetSkillsData.value[targetName] = { skills: [], loading: false, error: data.error }
+            }
+          } catch(e) {
+            targetSkillsData.value[targetName] = { skills: [], loading: false, error: String(e) }
+          }
+        }
+
+        async function deleteTargetSkill(targetName, skillName, global) {
+          openConfirm('确认删除', \`确定要从远端库 \${targetName} 中删除 Skill: \${skillName} 吗？\`, 'danger', async () => {
+            try {
+              const res = await fetch('/api/targets/skills', {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ targetName, skillName, global })
+              })
+              const data = await res.json()
+              if (data.success) {
+                addToast('删除成功', 'success')
+                fetchTargetSkills(targetName, global)
+              } else {
+                addToast(data.error || '删除失败', 'error')
+              }
+            } catch(e) {
+              addToast('删除失败', 'error')
+            }
+          })
+        }
+
         async function fetchTargets() {
           const res = await fetch('/api/targets')
           targets.value = await res.json()
+          targets.value.forEach(t => {
+            fetchTargetSkills(t.name, false)
+          })
         }
 
         function openAddTarget() {
@@ -258,6 +299,7 @@ export const HTML_CONTENT = `
           activeTab, agents, localSkills, globalSkills, keyword, searchResults, isSearching, search, openInstallModal, uninstall, uploadSkill,
           showInstallModal, isInstalling, installData, agentFilter, selectedAgents, filteredAgents, confirmInstall,
           targets, showTargetModal, targetFormData, isSavingTarget, openAddTarget, saveTarget, deleteTarget,
+          targetSkillsData, fetchTargetSkills, deleteTargetSkill,
           toasts, confirmModal, handleConfirm,
           hasLocal: () => Object.keys(localSkills.value).length > 0,
           hasGlobal: () => Object.keys(globalSkills.value).length > 0
@@ -345,13 +387,16 @@ export const HTML_CONTENT = `
                       <span class="px-3 py-1 bg-emerald-500/10 rounded-lg">{{ agents.find(a=>a.id===agentId)?.name || agentId }}</span>
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
-                      <div v-for="s in skills" :key="s.name" class="glass p-5 rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 group border border-slate-700/50 hover:border-emerald-500/30 flex flex-col h-full">
+                      <div v-for="s in skills" :key="s.name" class="glass p-5 rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 group border border-slate-700/50 hover:border-emerald-500/30 flex flex-col min-h-[180px] relative">
                          <h4 class="font-bold text-lg flex items-start justify-between">
                            <span class="text-slate-200 truncate pr-2">{{ s.name }}</span>
                            <span v-if="s.meta?.version" class="text-xs font-mono bg-slate-800 text-emerald-400 px-2 py-1 rounded-md border border-slate-700 whitespace-nowrap shrink-0">v{{s.meta.version}}</span>
                          </h4>
-                         <p class="text-sm text-slate-400 mt-3 line-clamp-3 leading-relaxed flex-1">{{ s.meta?.description || '无描述信息' }}</p>
-                         <div class="mt-4 pt-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-auto border-t border-slate-800">
+                         <div class="mt-3 flex-1 group/desc relative">
+                           <p class="text-sm text-slate-400 line-clamp-2 leading-relaxed">{{ s.meta?.description || '无描述信息' }}</p>
+                           <div v-if="s.meta?.description && s.meta.description.length > 40" class="absolute left-0 bottom-full mb-2 w-72 px-4 py-3 text-xs text-slate-200 bg-slate-900/95 border border-slate-600 rounded-xl shadow-2xl opacity-0 group-hover/desc:opacity-100 transition-opacity duration-200 pointer-events-none z-30 whitespace-normal leading-relaxed backdrop-blur-sm">{{ s.meta.description }}</div>
+                         </div>
+                         <div class="mt-auto pt-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 border-t border-slate-800">
                            <button @click="uploadSkill(s.name, false)" class="relative group/btn text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors border border-transparent hover:border-blue-500/20">
                              <iconify-icon icon="lucide:upload-cloud" class="text-lg"></iconify-icon>
                              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-xs font-medium text-white bg-slate-900 rounded-lg shadow-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-slate-700/50 z-10">上传至仓库</div>
@@ -380,13 +425,16 @@ export const HTML_CONTENT = `
                       <span class="px-3 py-1 bg-cyan-500/10 rounded-lg">{{ agents.find(a=>a.id===agentId)?.name || agentId }}</span>
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
-                      <div v-for="s in skills" :key="s.name" class="glass p-5 rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 group border border-slate-700/50 hover:border-cyan-500/30 flex flex-col h-full">
+                      <div v-for="s in skills" :key="s.name" class="glass p-5 rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 group border border-slate-700/50 hover:border-cyan-500/30 flex flex-col min-h-[180px] relative">
                          <h4 class="font-bold text-lg flex items-start justify-between">
                            <span class="text-slate-200 truncate pr-2">{{ s.name }}</span>
                            <span v-if="s.meta?.version" class="text-xs font-mono bg-slate-800 text-cyan-400 px-2 py-1 rounded-md border border-slate-700 whitespace-nowrap shrink-0">v{{s.meta.version}}</span>
                          </h4>
-                         <p class="text-sm text-slate-400 mt-3 line-clamp-3 leading-relaxed flex-1">{{ s.meta?.description || '无描述信息' }}</p>
-                         <div class="mt-4 pt-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-auto border-t border-slate-800">
+                         <div class="mt-3 flex-1 group/desc relative">
+                           <p class="text-sm text-slate-400 line-clamp-2 leading-relaxed">{{ s.meta?.description || '无描述信息' }}</p>
+                           <div v-if="s.meta?.description && s.meta.description.length > 40" class="absolute left-0 bottom-full mb-2 w-72 px-4 py-3 text-xs text-slate-200 bg-slate-900/95 border border-slate-600 rounded-xl shadow-2xl opacity-0 group-hover/desc:opacity-100 transition-opacity duration-200 pointer-events-none z-30 whitespace-normal leading-relaxed backdrop-blur-sm">{{ s.meta.description }}</div>
+                         </div>
+                         <div class="mt-auto pt-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 border-t border-slate-800">
                            <button @click="uploadSkill(s.name, true)" class="relative group/btn text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors border border-transparent hover:border-blue-500/20">
                              <iconify-icon icon="lucide:upload-cloud" class="text-lg"></iconify-icon>
                              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-xs font-medium text-white bg-slate-900 rounded-lg shadow-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-slate-700/50 z-10">上传至仓库</div>
@@ -462,30 +510,64 @@ export const HTML_CONTENT = `
                     <div>尚未配置任何上传目标</div>
                   </div>
 
-                  <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    <div v-for="t in targets" :key="t.name" class="glass p-5 rounded-2xl hover:-translate-y-1 transition-all duration-300 border border-slate-700/50 flex flex-col h-full group hover:border-blue-500/30">
-                       <h4 class="font-bold text-lg flex items-center gap-2 mb-2">
+                  <div v-else class="space-y-6">
+                    <div v-for="t in targets" :key="t.name" class="glass p-6 rounded-2xl border border-slate-700/50 flex flex-col group hover:border-blue-500/30 transition-all duration-300 relative overflow-hidden">
+                       <div class="absolute top-0 right-0 p-4">
+                         <button @click="deleteTarget(t.name, false)" class="text-slate-500 hover:text-red-400 p-2 rounded-lg transition-colors" title="删除整个目标配置">
+                           <iconify-icon icon="lucide:trash-2" class="text-xl"></iconify-icon>
+                         </button>
+                       </div>
+                       <h4 class="font-bold text-xl flex items-center gap-2 mb-2">
                          <iconify-icon icon="lucide:server" class="text-blue-400"></iconify-icon>
-                         <span class="text-slate-200">{{ t.name }}</span>
+                         <span class="text-slate-100">{{ t.name }}</span>
                        </h4>
-                       <div class="text-sm text-slate-400 space-y-2 mt-2">
-                         <div class="flex items-start gap-2">
-                           <iconify-icon icon="lucide:link" class="mt-0.5 opacity-70"></iconify-icon>
-                           <span class="truncate" :title="t.url">{{ t.url }}</span>
+                       <div class="flex items-center gap-4 text-sm text-slate-400 mt-2 mb-6 border-b border-slate-800/50 pb-4">
+                         <div class="flex items-center gap-1.5" :title="t.url">
+                           <iconify-icon icon="lucide:link"></iconify-icon>
+                           <span class="truncate max-w-[200px]">{{ t.url }}</span>
                          </div>
-                         <div class="flex items-center gap-2">
-                           <iconify-icon icon="lucide:folder" class="opacity-70"></iconify-icon>
+                         <div class="flex items-center gap-1.5">
+                           <iconify-icon icon="lucide:folder"></iconify-icon>
                            <span>{{ t.path || 'skills' }}</span>
                          </div>
-                         <div v-if="t.branch" class="flex items-center gap-2">
-                           <iconify-icon icon="lucide:git-branch" class="opacity-70"></iconify-icon>
+                         <div v-if="t.branch" class="flex items-center gap-1.5">
+                           <iconify-icon icon="lucide:git-branch"></iconify-icon>
                            <span>{{ t.branch }}</span>
                          </div>
                        </div>
-                       <div class="mt-4 pt-4 border-t border-slate-800 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                         <button @click="deleteTarget(t.name, false)" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-colors border border-transparent hover:border-red-500/20" title="删除">
-                           <iconify-icon icon="lucide:trash-2" class="text-lg"></iconify-icon>
-                         </button>
+                       
+                       <!-- Skills List -->
+                       <div>
+                         <h5 class="text-sm font-medium text-slate-400 mb-3 flex items-center gap-2">
+                            <iconify-icon icon="lucide:package-open"></iconify-icon> 远端库 Skills
+                         </h5>
+                         <div v-if="targetSkillsData[t.name]?.loading" class="text-center py-8">
+                           <iconify-icon icon="lucide:loader-2" class="animate-spin text-3xl text-blue-500/50"></iconify-icon>
+                           <div class="text-sm text-slate-500 mt-2">正在拉取远端信息...</div>
+                         </div>
+                         <div v-else-if="targetSkillsData[t.name]?.error" class="text-center py-6 border border-red-500/20 rounded-xl bg-red-500/5">
+                            <div class="text-red-400 text-sm mb-2">获取失败: {{ targetSkillsData[t.name].error }}</div>
+                            <button @click="fetchTargetSkills(t.name, false)" class="text-blue-400 text-xs hover:underline">重试</button>
+                         </div>
+                         <div v-else-if="!targetSkillsData[t.name]?.skills?.length" class="text-center py-6 text-sm text-slate-500 bg-slate-800/20 rounded-xl border border-slate-800 border-dashed">
+                            暂无上传的技能
+                         </div>
+                         <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                           <div v-for="skill in targetSkillsData[t.name].skills" :key="skill.name" class="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 flex justify-between items-start group/skill hover:border-slate-600 transition-colors">
+                             <div class="min-w-0 flex-1">
+                                <div class="font-bold text-slate-200 truncate flex items-center gap-2">
+                                  {{ skill.meta?.name || skill.name }}
+                                  <span v-if="skill.meta?.version" class="text-[10px] bg-slate-700 px-1.5 py-0.5 rounded text-slate-300 font-mono">{{ skill.meta.version }}</span>
+                                </div>
+                                <div class="text-xs text-slate-400 mt-1 truncate" :title="skill.meta?.description">
+                                  {{ skill.meta?.description || '无描述信息' }}
+                                </div>
+                             </div>
+                             <button @click="deleteTargetSkill(t.name, skill.name, false)" class="text-slate-500 hover:text-red-400 hover:bg-red-500/10 p-1.5 rounded transition-all opacity-0 group-hover/skill:opacity-100 flex-shrink-0 ml-2" title="删除该技能">
+                               <iconify-icon icon="lucide:trash-2"></iconify-icon>
+                             </button>
+                           </div>
+                         </div>
                        </div>
                     </div>
                   </div>

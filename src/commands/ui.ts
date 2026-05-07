@@ -9,7 +9,7 @@ import { getGlobalConfigPath, getProjectConfigPathForWrite, loadConfig, loadConf
 import { installSkill } from '~/core/installer'
 import { scanGlobalSkills, scanLocalSkills } from '~/core/scanner'
 import { uninstallSkill } from '~/core/uninstaller'
-import { addUploadTargetToConfig, collectUploadSkills, getUploadTarget, uploadSkills } from '~/core/upload'
+import { addUploadTargetToConfig, collectUploadSkills, deleteRemoteSkill, getRemoteSkills, getUploadTarget, uploadSkills } from '~/core/upload'
 
 import { HTML_CONTENT } from './ui.template'
 
@@ -203,6 +203,63 @@ export async function uiCommand(options: { port?: number } = {}) {
 
           saveConfig(config, configPath)
           jsonResponse({ success: true, message: '删除成功' })
+        }
+        catch (err) {
+          jsonResponse({ success: false, error: String(err) }, 500)
+        }
+      })
+      return
+    }
+
+    if (req.method === 'GET' && pathname === '/api/targets/skills') {
+      try {
+        const targetName = parsedUrl.searchParams.get('targetName')
+        const isGlobal = parsedUrl.searchParams.get('global') === 'true'
+        if (!targetName) {
+          return jsonResponse({ success: false, error: 'targetName is required' }, 400)
+        }
+
+        const configPath = isGlobal ? getGlobalConfigPath() : getProjectConfigPathForWrite(cwd)
+        const config = loadConfigAtPath(configPath)
+        const target = config.upload?.targets?.find(t => t.name === targetName)
+
+        if (!target) {
+          return jsonResponse({ success: false, error: 'Target not found' }, 404)
+        }
+
+        const skills = getRemoteSkills(target, cwd)
+        return jsonResponse({ success: true, skills })
+      }
+      catch (err) {
+        return jsonResponse({ success: false, error: String(err) }, 500)
+      }
+    }
+
+    if (req.method === 'DELETE' && pathname === '/api/targets/skills') {
+      let body = ''
+      req.on('data', chunk => body += chunk)
+      req.on('end', () => {
+        try {
+          const { targetName, skillName, global } = JSON.parse(body)
+          if (!targetName || !skillName) {
+            return jsonResponse({ success: false, error: 'targetName and skillName are required' }, 400)
+          }
+
+          const configPath = global ? getGlobalConfigPath() : getProjectConfigPathForWrite(cwd)
+          const config = loadConfigAtPath(configPath)
+          const target = config.upload?.targets?.find(t => t.name === targetName)
+
+          if (!target) {
+            return jsonResponse({ success: false, error: 'Target not found' }, 404)
+          }
+
+          const deleted = deleteRemoteSkill(target, skillName, cwd)
+          if (deleted) {
+            jsonResponse({ success: true, message: '删除成功' })
+          }
+          else {
+            jsonResponse({ success: false, error: '无法删除技能或技能不存在' }, 400)
+          }
         }
         catch (err) {
           jsonResponse({ success: false, error: String(err) }, 500)

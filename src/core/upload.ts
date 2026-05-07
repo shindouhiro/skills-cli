@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, relative, resolve } from 'node:path'
-import { scanGlobalSkills, scanLocalSkills } from '~/core/scanner'
+import { parseSkillMeta, scanGlobalSkills, scanLocalSkills } from '~/core/scanner'
 import { isSafeSkillName } from '~/core/skill-name'
 import { getStoreSkillDir } from '~/core/store'
 
@@ -204,6 +204,78 @@ export function uploadSkills(options: UploadSkillsOptions): UploadSkillsResult {
       target,
       uploaded,
     }
+  }
+  finally {
+    rmSync(tmpDir, { recursive: true, force: true })
+  }
+}
+
+export function getRemoteSkills(target: UploadTargetConfig, cwd: string): { name: string, meta?: SkillMeta }[] {
+  const tmpDir = join(tmpdir(), `skills-cli-read-${Date.now()}`)
+  const repoDir = join(tmpDir, 'repo')
+  mkdirSync(tmpDir, { recursive: true })
+
+  try {
+    // Clone with depth=1 to make it fast
+    runGit(cwd, ['clone', '--depth', '1', target.url, repoDir])
+    checkoutBranch(target, repoDir)
+
+    const targetRoot = join(repoDir, normalizeTargetPath(target.path))
+    if (!existsSync(targetRoot)) {
+      return []
+    }
+
+    const entries = readdirSync(targetRoot, { withFileTypes: true })
+    const skills = []
+
+    for (const entry of entries) {
+      if (!entry.isDirectory())
+        continue
+      const skillPath = join(targetRoot, entry.name)
+      const skillMdPath = join(skillPath, 'SKILL.md')
+
+      let meta: SkillMeta | undefined
+      if (existsSync(skillMdPath)) {
+        meta = parseSkillMeta(readFileSync(skillMdPath, 'utf-8'))
+      }
+      skills.push({ name: entry.name, meta })
+    }
+
+    return skills
+  }
+  finally {
+    rmSync(tmpDir, { recursive: true, force: true })
+  }
+}
+
+export function deleteRemoteSkill(target: UploadTargetConfig, skillName: string, cwd: string): boolean {
+  const tmpDir = join(tmpdir(), `skills-cli-delete-${Date.now()}`)
+  const repoDir = join(tmpDir, 'repo')
+  mkdirSync(tmpDir, { recursive: true })
+
+  try {
+    cloneTarget(target, repoDir, cwd)
+    checkoutBranch(target, repoDir)
+    ensureGitIdentity(repoDir)
+
+    const targetRoot = join(repoDir, normalizeTargetPath(target.path))
+    const skillPath = join(targetRoot, skillName)
+
+    if (!existsSync(skillPath)) {
+      return false // skill not found
+    }
+
+    rmSync(skillPath, { recursive: true, force: true })
+
+    runGit(repoDir, ['add', normalizeTargetPath(target.path)])
+    if (!hasChanges(repoDir)) {
+      return false
+    }
+
+    runGit(repoDir, ['commit', '-m', `delete skill: ${skillName}`])
+    runGit(repoDir, ['push', 'origin', 'HEAD'])
+
+    return true
   }
   finally {
     rmSync(tmpDir, { recursive: true, force: true })
