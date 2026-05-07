@@ -15,6 +15,8 @@ export interface AgentDefinition {
   projectDir: string
   /** 用户级 skills 目录（绝对路径 ~ 展开） */
   globalDir: string
+  /** 图标名称 (iconify) */
+  icon?: string
 }
 
 /**

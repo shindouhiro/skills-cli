@@ -1,3 +1,7 @@
+import AI_ICONS from './icons.json'
+
+const AI_ICONS_JSON = JSON.stringify(AI_ICONS)
+
 export const HTML_CONTENT = `
 <!DOCTYPE html>
 <html lang="zh-CN" class="dark">
@@ -6,6 +10,13 @@ export const HTML_CONTENT = `
   <title>Skills Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
+  <script>
+    window.__AI_ICONS__ = ${AI_ICONS_JSON};
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.IconifyIcon) { window.IconifyIcon.addCollection(window.__AI_ICONS__); }
+      else { customElements.whenDefined('iconify-icon').then(function() { customElements.get('iconify-icon').addCollection(window.__AI_ICONS__); }); }
+    });
+  </script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -117,9 +128,10 @@ export const HTML_CONTENT = `
         }
 
         const filteredAgents = computed(() => {
-          if (!agentFilter.value) return agents.value
+          const withIcons = agents.value.filter(a => a.icon && a.icon.startsWith('ai:'))
+          if (!agentFilter.value) return withIcons
           const lower = agentFilter.value.toLowerCase()
-          return agents.value.filter(a => a.name.toLowerCase().includes(lower) || a.id.toLowerCase().includes(lower))
+          return withIcons.filter(a => a.name.toLowerCase().includes(lower) || a.id.toLowerCase().includes(lower))
         })
 
         async function confirmInstall() {
@@ -384,7 +396,13 @@ export const HTML_CONTENT = `
                   </div>
                   <div v-for="(skills, agentId) in localSkills" :key="agentId" class="mb-8 bg-slate-800/20 rounded-2xl p-6 border border-slate-800">
                     <h3 class="text-lg font-medium text-emerald-400 mb-6 flex items-center gap-2">
-                      <span class="px-3 py-1 bg-emerald-500/10 rounded-lg">{{ agents.find(a=>a.id===agentId)?.name || agentId }}</span>
+                      <div class="px-3 py-1.5 bg-emerald-500/10 rounded-xl flex items-center gap-2.5 border border-emerald-500/20 shadow-sm shadow-emerald-500/5">
+                        <template v-if="agents.find(a=>a.id===agentId)?.icon">
+                          <img v-if="agents.find(a=>a.id===agentId).icon.startsWith('http')" :src="agents.find(a=>a.id===agentId).icon" class="w-6 h-6 object-contain" />
+                          <iconify-icon v-else :icon="agents.find(a=>a.id===agentId).icon" class="text-2xl"></iconify-icon>
+                        </template>
+                        <span>{{ agents.find(a=>a.id===agentId)?.name || agentId }}</span>
+                      </div>
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
                       <div v-for="s in skills" :key="s.name" class="glass p-5 rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 group border border-slate-700/50 hover:border-emerald-500/30 flex flex-col min-h-[180px] relative">
@@ -422,7 +440,13 @@ export const HTML_CONTENT = `
                   </div>
                   <div v-for="(skills, agentId) in globalSkills" :key="agentId" class="mb-8 bg-slate-800/20 rounded-2xl p-6 border border-slate-800">
                     <h3 class="text-lg font-medium text-cyan-400 mb-6 flex items-center gap-2">
-                      <span class="px-3 py-1 bg-cyan-500/10 rounded-lg">{{ agents.find(a=>a.id===agentId)?.name || agentId }}</span>
+                      <div class="px-3 py-1.5 bg-cyan-500/10 rounded-xl flex items-center gap-2.5 border border-cyan-500/20 shadow-sm shadow-cyan-500/5">
+                        <template v-if="agents.find(a=>a.id===agentId)?.icon">
+                          <img v-if="agents.find(a=>a.id===agentId).icon.startsWith('http')" :src="agents.find(a=>a.id===agentId).icon" class="w-6 h-6 object-contain" />
+                          <iconify-icon v-else :icon="agents.find(a=>a.id===agentId).icon" class="text-2xl"></iconify-icon>
+                        </template>
+                        <span>{{ agents.find(a=>a.id===agentId)?.name || agentId }}</span>
+                      </div>
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
                       <div v-for="s in skills" :key="s.name" class="glass p-5 rounded-2xl hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 group border border-slate-700/50 hover:border-cyan-500/30 flex flex-col min-h-[180px] relative">
@@ -647,10 +671,16 @@ export const HTML_CONTENT = `
                           <path d="M1 5L5 9L13 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                        </svg>
                      </div>
-                     <div class="flex flex-col">
-                       <span class="font-medium text-slate-200 group-hover:text-emerald-300 transition-colors">{{ agent.name }}</span>
+                     <div class="flex items-center flex-1">
+                        <template v-if="agent.icon">
+                          <img v-if="agent.icon.startsWith('http')" :src="agent.icon" class="w-6 h-6 object-contain mr-3 group-hover:scale-110 transition-transform" />
+                          <iconify-icon v-else :icon="agent.icon" class="text-2xl text-slate-400 mr-3 group-hover:text-emerald-400 transition-colors"></iconify-icon>
+                        </template>
+                        <div class="flex flex-col">
+                          <span class="font-medium text-slate-200 group-hover:text-emerald-300 transition-colors">{{ agent.name }}</span>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-500 ml-auto bg-slate-900 px-2 py-0.5 rounded border border-slate-700 opacity-60">{{ agent.id }}</span>
                      </div>
-                     <span class="text-xs font-mono text-slate-500 ml-auto bg-slate-800/50 px-2 py-1 rounded border border-slate-700">{{ agent.id }}</span>
                   </label>
                   <div v-if="filteredAgents.length === 0" class="text-center py-10 text-slate-500">
                     无匹配的 Agent
