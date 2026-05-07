@@ -188,9 +188,10 @@ skills ui
 - **极致设计**：全 PC 端兼容，采用高保定 AI 助手图标库（本地化集成）及流畅动效，提供桌面级的管理体验。
 
 <p align="center">
-  <img src="https://i0.hdslb.com/bfs/openplatform/1945a9c389546ea25b285dd51b3d6e75c0c85ef7.png@1e_1c.webp" width="400" alt="Skills Warehouse" />
-    <img src="https://i0.hdslb.com/bfs/openplatform/6763d2e3f75259123494648de4c1f2a512e0da51.png@1e_1c.webp" width="400" alt="Skills Search" />
-  <img src="https://i0.hdslb.com/bfs/openplatform/474104b40c11ecc6e00a9196082a20995acc91f2.png@1e_1c.webp" width="400" alt="Skills UI Dashboard" />
+  <img src="https://i0.hdslb.com/bfs/openplatform/474104b40c11ecc6e00a9196082a20995acc91f2.png@1e_1c.webp" width="400" alt="Skills UI Dashboard" referrerpolicy="no-referrer" />
+  <img src="https://i0.hdslb.com/bfs/openplatform/6763d2e3f75259123494648de4c1f2a512e0da51.png@1e_1c.webp" width="400" alt="Skills Search" referrerpolicy="no-referrer" />
+  <img src="https://i0.hdslb.com/bfs/openplatform/1945a9c389546ea25b285dd51b3d6e75c0c85ef7.png@1e_1c.webp" width="400" alt="Skills Warehouse" referrerpolicy="no-referrer" />
+  <img src="https://i0.hdslb.com/bfs/openplatform/e64530b5f4af8ca29ff539669f723254f900c282.png@1e_1c.webp" width="400" alt="Skills Settings" referrerpolicy="no-referrer" />
 </p>
 
 
