@@ -188,6 +188,9 @@ skills ui
 - **极致设计**：全 PC 端兼容，采用高保定 AI 助手图标库（本地化集成）及流畅动效，提供桌面级的管理体验。
 
 <p align="center">
+  <img src="https://i0.hdslb.com/bfs/openplatform/3f46c52a7e26b050e546713f78b184ac13090c33.png@1e_1c.webp" width="600" alt="Skills UI Overview" referrerpolicy="no-referrer" />
+</p>
+<p align="center">
   <img src="https://i0.hdslb.com/bfs/openplatform/474104b40c11ecc6e00a9196082a20995acc91f2.png@1e_1c.webp" width="600" alt="Skills UI Dashboard" referrerpolicy="no-referrer" />
 </p>
 <p align="center">

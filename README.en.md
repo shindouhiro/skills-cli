@@ -189,6 +189,9 @@ In the Web UI (default `http://localhost:3080`), you can:
 - **Premium Aesthetics**: Fully optimized for PC with locally integrated high-fidelity AI assistant icons and smooth animations for a state-of-the-art management experience.
 
 <p align="center">
+  <img src="https://i0.hdslb.com/bfs/openplatform/3f46c52a7e26b050e546713f78b184ac13090c33.png@1e_1c.webp" width="600" alt="Skills UI Overview" referrerpolicy="no-referrer" />
+</p>
+<p align="center">
   <img src="https://i0.hdslb.com/bfs/openplatform/474104b40c11ecc6e00a9196082a20995acc91f2.png@1e_1c.webp" width="600" alt="Skills UI Dashboard" referrerpolicy="no-referrer" />
 </p>
 <p align="center">
