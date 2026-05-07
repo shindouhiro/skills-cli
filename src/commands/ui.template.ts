@@ -54,6 +54,10 @@ export const HTML_CONTENT = `
         const activeTab = ref('installed')
         const agents = ref([])
         const defaultAgentIds = ref([])
+        const configText = ref('{}')
+        const configPath = ref('')
+        const configScope = ref('project')
+        const isSavingConfig = ref(false)
         const localSkills = ref({})
         const globalSkills = ref({})
         const keyword = ref('')
@@ -310,10 +314,45 @@ export const HTML_CONTENT = `
            })
         }
 
+        async function fetchConfig() {
+          try {
+            const res = await fetch('/api/config?scope=' + configScope.value)
+            const data = await res.json()
+            configPath.value = data.path
+            configText.value = JSON.stringify(JSON.parse(data.content), null, 2)
+          } catch(e) {
+            configText.value = '{}'
+          }
+        }
+
+        async function saveConfigData() {
+          isSavingConfig.value = true
+          try {
+            JSON.parse(configText.value) // validate first
+            const res = await fetch('/api/config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ path: configPath.value, content: configText.value })
+            })
+            const data = await res.json()
+            if (data.success) {
+              addToast('配置保存成功', 'success')
+              fetchAgents() // refresh defaultAgents
+            } else {
+              addToast(data.error || '保存失败', 'error')
+            }
+          } catch(e) {
+            addToast('JSON 格式错误，请检查', 'error')
+          } finally {
+            isSavingConfig.value = false
+          }
+        }
+
         onMounted(() => {
           fetchAgents()
           fetchSkills()
           fetchTargets()
+          fetchConfig()
         })
 
         return {
@@ -322,6 +361,7 @@ export const HTML_CONTENT = `
           targets, showTargetModal, targetFormData, isSavingTarget, openAddTarget, saveTarget, deleteTarget,
           targetSkillsData, fetchTargetSkills, deleteTargetSkill,
           toasts, confirmModal, handleConfirm,
+          configText, configPath, configScope, isSavingConfig, fetchConfig, saveConfigData,
           hasLocal: () => Object.keys(localSkills.value).length > 0,
           hasGlobal: () => Object.keys(globalSkills.value).length > 0
         }
@@ -374,6 +414,9 @@ export const HTML_CONTENT = `
              <button @click="activeTab='targets'" :class="['w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-300', activeTab==='targets'?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20':'text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-transparent']">
                <iconify-icon icon="catppuccin:folder-git" class="text-2xl"></iconify-icon> 仓库设置
              </button>
+             <button @click="activeTab='config'" :class="['w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-300', activeTab==='config'?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20':'text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-transparent']">
+               <iconify-icon icon="lucide:settings" class="text-2xl"></iconify-icon> 配置管理
+             </button>
           </nav>
           <div class="p-6 text-xs text-slate-500 border-t border-slate-800">
              Skills CLI Dashboard v1.0
@@ -388,6 +431,7 @@ export const HTML_CONTENT = `
                 <span v-if="activeTab==='installed'">已安装的 Skills</span>
                 <span v-if="activeTab==='search'">发现新的 Skills</span>
                 <span v-if="activeTab==='targets'">上传仓库配置</span>
+                <span v-if="activeTab==='config'">配置管理</span>
              </h2>
           </header>
 
@@ -608,6 +652,51 @@ export const HTML_CONTENT = `
                     </div>
                   </div>
                 </section>
+             </div>
+
+             <!-- Config Tab -->
+             <div v-if="activeTab === 'config'" class="w-full space-y-8 animate-fade-in pb-10">
+               <section>
+                 <div class="flex items-center justify-between mb-6">
+                   <div class="flex items-center gap-3">
+                     <span class="w-1.5 h-6 bg-amber-500 rounded-full shadow-[0_0_10px_#f59e0b]"></span>
+                     <h2 class="text-xl font-bold text-slate-100">配置文件编辑器</h2>
+                     
+                     <!-- Scope Toggle -->
+                     <div class="flex items-center ml-4 bg-slate-800/80 p-1 rounded-lg border border-slate-700">
+                       <button @click="configScope = 'project'; fetchConfig()" :class="['px-3 py-1.5 text-xs font-medium rounded-md transition-all', configScope === 'project' ? 'bg-amber-500/20 text-amber-400 shadow-sm' : 'text-slate-400 hover:text-slate-300']">
+                         项目级别
+                       </button>
+                       <button @click="configScope = 'global'; fetchConfig()" :class="['px-3 py-1.5 text-xs font-medium rounded-md transition-all', configScope === 'global' ? 'bg-amber-500/20 text-amber-400 shadow-sm' : 'text-slate-400 hover:text-slate-300']">
+                         全局级别
+                       </button>
+                     </div>
+                   </div>
+                   <div class="flex items-center gap-3">
+                     <button @click="fetchConfig" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 text-sm border border-slate-700 hover:border-slate-600">
+                       <iconify-icon icon="lucide:refresh-cw"></iconify-icon> 重新加载
+                     </button>
+                     <button @click="saveConfigData" :disabled="isSavingConfig" class="bg-gradient-to-r from-amber-500 to-orange-400 hover:from-amber-400 hover:to-orange-300 disabled:opacity-50 text-slate-900 px-5 py-2 rounded-lg font-bold transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 text-sm">
+                       <iconify-icon icon="lucide:save"></iconify-icon> {{ isSavingConfig ? '保存中...' : '保存配置' }}
+                     </button>
+                   </div>
+                 </div>
+
+                 <div class="glass rounded-2xl p-6 border border-slate-700/50 space-y-5">
+                   <div class="flex items-center gap-3 text-sm text-slate-400 bg-slate-800/50 px-4 py-3 rounded-xl border border-slate-700/30">
+                     <iconify-icon icon="lucide:file-json" class="text-amber-400 text-lg shrink-0"></iconify-icon>
+                     <span class="font-mono truncate">{{ configPath }}</span>
+                   </div>
+                   <textarea v-model="configText" spellcheck="false"
+                     class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-5 py-4 text-sm text-emerald-300 font-mono focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30 transition-all resize-y leading-relaxed custom-scroll"
+                     style="min-height: 400px; tab-size: 2;"
+                   ></textarea>
+                   <div class="flex items-center gap-2 text-xs text-slate-500">
+                     <iconify-icon icon="lucide:info" class="text-base"></iconify-icon>
+                     <span>编辑后点击「保存配置」生效，支持 defaultAgents、sources、installMode、scope、upload 等字段</span>
+                   </div>
+                 </div>
+               </section>
              </div>
           </main>
 

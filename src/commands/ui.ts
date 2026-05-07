@@ -55,6 +55,52 @@ export async function uiCommand(options: { port?: number } = {}) {
       return jsonResponse({ local, global })
     }
 
+    if (req.method === 'GET' && pathname === '/api/config') {
+      const scope = (query.scope as string) || 'project'
+      const { readFileSync, existsSync } = await import('node:fs')
+      const { homedir } = await import('node:os')
+      const { join } = await import('node:path')
+
+      let configPath = ''
+      if (scope === 'global') {
+        configPath = join(homedir(), '.skillsrc')
+      }
+      else {
+        // For project level, force it to current working directory if not found
+        // or let getProjectConfigPathForWrite handle it, but prevent it from bubbling up to ~
+        configPath = getProjectConfigPathForWrite(cwd)
+        if (configPath === join(homedir(), '.skillsrc')) {
+          configPath = join(cwd, '.skillsrc')
+        }
+      }
+
+      let content = '{}'
+      if (existsSync(configPath)) {
+        content = readFileSync(configPath, 'utf-8')
+      }
+      return jsonResponse({ path: configPath, content, scope })
+    }
+
+    if (req.method === 'POST' && pathname === '/api/config') {
+      let body = ''
+      req.on('data', chunk => body += chunk)
+      req.on('end', async () => {
+        try {
+          const { path: configPath, content } = JSON.parse(body)
+          JSON.parse(content) // validate JSON
+          const { writeFileSync, mkdirSync } = await import('node:fs')
+          const { resolve } = await import('node:path')
+          mkdirSync(resolve(configPath, '..'), { recursive: true })
+          writeFileSync(configPath, content, 'utf-8')
+          jsonResponse({ success: true })
+        }
+        catch (err) {
+          jsonResponse({ success: false, error: String(err) }, 500)
+        }
+      })
+      return
+    }
+
     if (req.method === 'GET' && pathname === '/api/search') {
       const keyword = (query.q as string) || ''
       const config = loadConfig(cwd)
