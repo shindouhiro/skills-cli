@@ -197,9 +197,7 @@ In the Web UI (default `http://localhost:3080`), you can:
 <p align="center">
   <img src="https://i0.hdslb.com/bfs/openplatform/1945a9c389546ea25b285dd51b3d6e75c0c85ef7.png@1e_1c.webp" width="600" alt="Skills Warehouse" referrerpolicy="no-referrer" />
 </p>
-<p align="center">
-  <img src="https://i0.hdslb.com/bfs/openplatform/e64530b5f4af8ca29ff539669f723254f900c282.png@1e_1c.webp" width="600" alt="Skills Settings" referrerpolicy="no-referrer" />
-</p>
+
 
 
 ## 🛠️ Commands
