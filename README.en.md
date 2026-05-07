@@ -22,6 +22,24 @@
 
 ---
 
+## Table of Contents
+
+- [✨ Features](#-features)
+- [🚀 Installation](#-installation)
+- [💡 Quick Start](#-quick-start)
+  - [1. Search Skills](#1-search-skills)
+  - [2. Add Sources](#2-add-sources)
+  - [3. Upload Skills](#3-upload-skills)
+  - [4. Install Skills](#4-install-skills)
+  - [5. List Installed](#5-list-installed)
+  - [6. Uninstall Skills](#6-uninstall-skills)
+  - [7. Visual Management (Web UI)](#7-visual-management-web-ui)
+- [🛠️ Commands](#️-commands)
+- [📂 Supported AI Assistants](#-supported-ai-assistants)
+- [📄 License](#-license)
+
+---
+
 **Skills CLI** is a skill management tool built for 30+ AI coding assistants. It lets you search, download, and install **Skills** instruction sets across different AI assistants (Cursor, Claude Code, Antigravity, etc.) with a single command, dramatically improving your AI pair-programming experience.
 
 ## ✨ Features
@@ -62,7 +80,7 @@ skills search vue
 skills s react --limit 20    # Limit to 20 results
 ```
 
-### 2. Add Search/Download Sources
+### 2. Add Sources
 You can manually add a GitHub repository or skills.sh URL to `.skillsrc`; later `search` and name-based `install` commands will use those sources:
 ```bash
 skills source add https://github.com/owner/repo/tree/main/skills
@@ -163,10 +181,12 @@ skills ui
 In the Web UI (default `http://localhost:3080`), you can:
 - **Full-screen Dashboard**: A desktop-grade interface for managing all project-local and global skills with intuitive sidebar navigation.
 - **Dynamic Discovery**: Real-time search across thousands of skills on [skills.sh](https://skills.sh/) with filter support and one-click local/global installation.
+- **Smart Pre-selection**: Automatically reads `defaultAgents` from `.skillsrc` for pre-selection, featuring high-fidelity local icons and detailed source tooltips.
 - **Warehouse Management**: Integrated settings panel to manage multiple Git remote targets with support for both project-level and global configuration persistence.
+- **Config Management (Settings)**: New visual configuration editor to directly edit and save your project-local or global `.skillsrc` files.
 - **Remote Maintenance**: Browse existing skills in your remote repositories and perform remote deletions (automatic Git commit & push) directly from the UI.
 - **Safe Operations**: Critical actions like deletion feature custom, premium confirmation modals and real-time toast notifications.
-- **Premium Aesthetics**: Fully optimized for PC with Catppuccin iconography and smooth animations for a state-of-the-art management experience.
+- **Premium Aesthetics**: Fully optimized for PC with locally integrated high-fidelity AI assistant icons and smooth animations for a state-of-the-art management experience.
 
 ## 🛠️ Commands
 
@@ -182,7 +202,7 @@ In the Web UI (default `http://localhost:3080`), you can:
 | `ui` | - | Start the full-screen Web management UI | `-p, --port <number>`: Port to listen on (default 3080) |
 | `init` | - | Initialize `.skillsrc` config file | `-g, --global`: Initialize global config |
 
-## 📂 Supported AI Assistants (30+)
+## 📂 Supported AI Assistants
 
 `skills-cli` automatically detects and supports the following assistants:
 

@@ -13,6 +13,6 @@
     "isolatedModules": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.ts"],
+  "include": ["src/**/*.ts", "src/**/*.vue", "test/**/*.ts", "vitest.config.ts", "vite.ui.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

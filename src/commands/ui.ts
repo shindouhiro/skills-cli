@@ -1,6 +1,9 @@
 import { exec } from 'node:child_process'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import http from 'node:http'
+import { dirname, extname, join, normalize, sep } from 'node:path'
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import consola from 'consola'
 import pc from 'picocolors'
 import { createSourcesFromConfig, executeSearch } from '~/commands/search'
@@ -10,8 +13,6 @@ import { installSkill } from '~/core/installer'
 import { scanGlobalSkills, scanLocalSkills } from '~/core/scanner'
 import { uninstallSkill } from '~/core/uninstaller'
 import { addUploadTargetToConfig, collectUploadSkills, deleteRemoteSkill, getRemoteSkills, getUploadTarget, uploadSkills } from '~/core/upload'
-
-import { HTML_CONTENT } from './ui.template'
 
 function mapToObj<T>(map: Map<string, T>): Record<string, T> {
   const obj: Record<string, T> = {}
@@ -28,6 +29,48 @@ function openBrowser(url: string) {
   else if (platform === 'darwin')
     exec(`open ${url}`)
   else exec(`xdg-open ${url}`)
+}
+
+function getUiDistDir(): string {
+  return join(dirname(fileURLToPath(import.meta.url)), 'ui')
+}
+
+function getContentType(filePath: string): string {
+  const ext = extname(filePath)
+  if (ext === '.html')
+    return 'text/html; charset=utf-8'
+  if (ext === '.js')
+    return 'text/javascript; charset=utf-8'
+  if (ext === '.css')
+    return 'text/css; charset=utf-8'
+  if (ext === '.json')
+    return 'application/json; charset=utf-8'
+  if (ext === '.svg')
+    return 'image/svg+xml'
+  if (ext === '.png')
+    return 'image/png'
+  if (ext === '.ico')
+    return 'image/x-icon'
+  if (ext === '.woff2')
+    return 'font/woff2'
+  return 'application/octet-stream'
+}
+
+function serveUiAsset(pathname: string, res: http.ServerResponse): boolean {
+  const uiDir = getUiDistDir()
+  const requestPath = pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1))
+  const normalizedPath = normalize(requestPath)
+  const filePath = join(uiDir, normalizedPath)
+
+  if (!filePath.startsWith(`${uiDir}${sep}`) && filePath !== join(uiDir, 'index.html'))
+    return false
+
+  if (!existsSync(filePath) || !statSync(filePath).isFile())
+    return false
+
+  res.writeHead(200, { 'Content-Type': getContentType(filePath) })
+  res.end(readFileSync(filePath))
+  return true
 }
 
 export async function uiCommand(options: { port?: number } = {}) {
@@ -315,9 +358,7 @@ export async function uiCommand(options: { port?: number } = {}) {
       return
     }
 
-    if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-      res.end(HTML_CONTENT)
+    if (req.method === 'GET' && serveUiAsset(pathname, res)) {
       return
     }
 

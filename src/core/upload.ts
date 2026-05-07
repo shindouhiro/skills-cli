@@ -1,4 +1,4 @@
-import type { InstalledSkill, SkillsConfig, UploadTargetConfig } from '~/types'
+import type { InstalledSkill, SkillMeta, SkillsConfig, UploadTargetConfig } from '~/types'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs'

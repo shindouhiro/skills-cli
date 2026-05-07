@@ -36,8 +36,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && vite build --config vite.ui.config.ts",
     "dev": "tsdown --watch",
+    "dev:ui": "vite --config vite.ui.config.ts",
     "lint": "eslint . --cache",
     "lint:fix": "eslint . --cache --fix",
     "prepare": "npx simple-git-hooks",
@@ -51,17 +52,23 @@
     "cac": "catalog:prod",
     "consola": "catalog:prod",
     "ofetch": "catalog:prod",
-    "picocolors": "catalog:prod"
+    "picocolors": "catalog:prod",
+    "vue": "catalog:prod"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:dev",
     "@types/node": "catalog:dev",
+    "@vitejs/plugin-vue": "catalog:dev",
+    "autoprefixer": "catalog:dev",
     "bumpp": "catalog:dev",
     "eslint": "catalog:dev",
     "lint-staged": "catalog:dev",
+    "postcss": "catalog:dev",
     "simple-git-hooks": "catalog:dev",
+    "tailwindcss": "catalog:dev",
     "tsdown": "catalog:dev",
     "typescript": "catalog:dev",
+    "vite": "catalog:dev",
     "vitest": "catalog:dev"
   },
   "simple-git-hooks": {
