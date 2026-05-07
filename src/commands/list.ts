@@ -1,7 +1,6 @@
 import consola from 'consola'
 import pc from 'picocolors'
-import { getAgentSkillDirLabel, truncate } from '~/commands/shared'
-import { AGENTS } from '~/core/agents'
+import { countInstalledSkills, printInstalledSkillsTree } from '~/commands/shared'
 import { scanGlobalSkills, scanLocalSkills } from '~/core/scanner'
 
 interface ListCommandOptions {
@@ -26,37 +25,11 @@ export async function listCommand(options: ListCommandOptions): Promise<void> {
 
   consola.log('')
 
-  for (const [agentId, skills] of skillsMap) {
-    const agent = AGENTS.find(a => a.id === agentId)
-    if (!agent)
-      continue
+  printInstalledSkillsTree(skillsMap, {
+    global: options.global,
+    showDescription: true,
+  })
 
-    const dir = getAgentSkillDirLabel(agent, options.global)
-    consola.log(`  ${pc.bold(agent.name)} ${pc.dim(`(${dir})`)}`)
-
-    for (let i = 0; i < skills.length; i++) {
-      const skill = skills[i]
-      const isLast = i === skills.length - 1
-      const prefix = isLast ? '└──' : '├──'
-
-      const name = pc.green(skill.name)
-      const version = skill.meta?.version
-        ? pc.yellow(` v${skill.meta.version}`)
-        : ''
-      const desc = skill.meta?.description
-        ? pc.dim(` — ${truncate(skill.meta.description, 60)}`)
-        : ''
-
-      consola.log(`  ${pc.dim(prefix)} ${name}${version}${desc}`)
-    }
-
-    consola.log('')
-  }
-
-  // 统计
-  let totalSkills = 0
-  for (const skills of skillsMap.values()) {
-    totalSkills += skills.length
-  }
+  const totalSkills = countInstalledSkills(skillsMap)
   consola.info(`共 ${pc.bold(String(skillsMap.size))} 个助手, ${pc.bold(String(totalSkills))} 个 skills`)
 }

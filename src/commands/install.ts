@@ -3,7 +3,7 @@ import process from 'node:process'
 import * as p from '@clack/prompts'
 import consola from 'consola'
 import pc from 'picocolors'
-import { printAgentPlan, resolveTargetAgents } from '~/commands/shared'
+import { printAgentPlan, printCommandResultLines, resolveTargetAgents } from '~/commands/shared'
 import { loadConfig } from '~/core/config'
 import { installSkill } from '~/core/installer'
 
@@ -61,18 +61,10 @@ export async function installCommand(
     mode,
   })
 
-  // 输出结果
   consola.log('')
-  let successCount = 0
-  for (const result of results) {
-    if (result.success) {
-      successCount++
-      consola.success(`${pc.green('✔')} ${result.agent} → ${pc.dim(result.path)} ${pc.dim(`(${result.mode})`)}`)
-    }
-    else {
-      consola.warn(`${pc.yellow('⚠')} ${result.agent}: ${result.error}`)
-    }
-  }
+  const { successCount } = printCommandResultLines(results, {
+    successDetail: result => `${pc.dim(result.path)} ${pc.dim(`(${result.mode})`)}`,
+  })
 
   consola.log('')
   if (successCount > 0) {

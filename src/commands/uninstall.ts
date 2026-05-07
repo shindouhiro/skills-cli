@@ -1,11 +1,19 @@
-import type { SelectOption } from '~/commands/shared'
-import type { InstalledSkill } from '~/types'
 import process from 'node:process'
 import * as p from '@clack/prompts'
 import consola from 'consola'
 import pc from 'picocolors'
-import { getAgentSkillDirLabel, printAgentPlan, resolveTargetAgents, truncate } from '~/commands/shared'
-import { AGENTS, getAgentsByIds } from '~/core/agents'
+import {
+  countInstalledSkills,
+  createInstalledSkillSelectOptions,
+  filterSelectOptions,
+  groupInstalledSkillSelections,
+  printAgentPlan,
+  printCommandResultLines,
+  printInstalledSkillsTree,
+  printSkillDeletionPlan,
+  resolveTargetAgents,
+} from '~/commands/shared'
+import { getAgentsByIds } from '~/core/agents'
 import { loadConfig } from '~/core/config'
 import { scanGlobalSkills, scanLocalSkills } from '~/core/scanner'
 import { uninstallSkill } from '~/core/uninstaller'
@@ -14,85 +22,6 @@ interface UninstallCommandOptions {
   agent?: string
   global?: boolean
   filter?: string
-}
-
-interface SkillLookupEntry {
-  skill: InstalledSkill
-  agentId: string
-}
-
-/**
- * 构建 skill 选项和查找表
- */
-function buildSkillOptions(
-  skillsMap: Map<string, InstalledSkill[]>,
-): { options: SelectOption[], lookup: Map<string, SkillLookupEntry> } {
-  const options: SelectOption[] = []
-  const lookup = new Map<string, SkillLookupEntry>()
-
-  for (const [agentId, skills] of skillsMap) {
-    const agent = AGENTS.find(a => a.id === agentId)
-    if (!agent)
-      continue
-
-    for (const skill of skills) {
-      const key = `${agentId}::${skill.name}`
-      lookup.set(key, { skill, agentId })
-
-      const desc = skill.meta?.description
-        ? ` — ${truncate(skill.meta.description, 50)}`
-        : ''
-      const version = skill.meta?.version ? ` v${skill.meta.version}` : ''
-
-      options.push({
-        value: key,
-        label: `${skill.name}${version}${desc}`,
-        hint: agent.name,
-      })
-    }
-  }
-
-  return { options, lookup }
-}
-
-/**
- * 按关键字过滤选项（大小写不敏感，匹配 skill 名称、描述、agent 名）
- */
-function filterOptions(options: SelectOption[], keyword: string): SelectOption[] {
-  const lowerKeyword = keyword.toLowerCase()
-  return options.filter(opt =>
-    opt.label.toLowerCase().includes(lowerKeyword)
-    || opt.hint.toLowerCase().includes(lowerKeyword)
-    || opt.value.toLowerCase().includes(lowerKeyword),
-  )
-}
-
-/**
- * 显示已安装 skills 的概览列表
- */
-function printSkillsOverview(
-  skillsMap: Map<string, InstalledSkill[]>,
-  options: { global?: boolean },
-): void {
-  for (const [agentId, skills] of skillsMap) {
-    const agent = AGENTS.find(a => a.id === agentId)
-    if (!agent)
-      continue
-
-    const dir = getAgentSkillDirLabel(agent, options.global)
-    consola.log(`  ${pc.bold(agent.name)} ${pc.dim(`(${dir})`)}`)
-    for (let i = 0; i < skills.length; i++) {
-      const skill = skills[i]
-      const isLast = i === skills.length - 1
-      const prefix = isLast ? '└──' : '├──'
-      const name = pc.green(skill.name)
-      const version = skill.meta?.version
-        ? pc.yellow(` v${skill.meta.version}`)
-        : ''
-      consola.log(`  ${pc.dim(prefix)} ${name}${version}`)
-    }
-    consola.log('')
-  }
 }
 
 /**
@@ -119,16 +48,12 @@ async function executeBatchDelete(
         cwd,
       })
 
-      for (const result of results) {
-        if (result.success) {
-          totalSuccess++
-          consola.success(`${pc.green('✔')} ${result.agent} → ${pc.dim(skillName)}`)
-        }
-        else {
-          totalFailed++
-          consola.warn(`${pc.yellow('⚠')} ${result.agent}: ${skillName} — ${result.error}`)
-        }
-      }
+      const summary = printCommandResultLines(results, {
+        successDetail: result => pc.dim(result.skill),
+        failureDetail: result => `${result.skill} — ${result.error}`,
+      })
+      totalSuccess += summary.successCount
+      totalFailed += summary.failedCount
     }
   }
 
@@ -160,7 +85,7 @@ async function interactiveUninstall(options: UninstallCommandOptions): Promise<v
     return
   }
 
-  const { options: allOptions, lookup: skillLookup } = buildSkillOptions(skillsMap)
+  const { options: allOptions, lookup: skillLookup } = createInstalledSkillSelectOptions(skillsMap)
 
   if (allOptions.length === 0) {
     consola.info('未找到可删除的 skills')
@@ -169,9 +94,9 @@ async function interactiveUninstall(options: UninstallCommandOptions): Promise<v
 
   // 显示已安装的 skills 概览
   consola.log('')
-  consola.info(`共发现 ${pc.bold(String(allOptions.length))} 个已安装的 skills:`)
+  consola.info(`共发现 ${pc.bold(String(countInstalledSkills(skillsMap)))} 个已安装的 skills:`)
   consola.log('')
-  printSkillsOverview(skillsMap, options)
+  printInstalledSkillsTree(skillsMap, options)
 
   // 获取过滤关键字（CLI --filter 优先，否则交互式输入）
   let keyword = options.filter?.trim() || ''
@@ -194,7 +119,7 @@ async function interactiveUninstall(options: UninstallCommandOptions): Promise<v
   // 应用过滤
   let filteredOptions = allOptions
   if (keyword) {
-    filteredOptions = filterOptions(allOptions, keyword)
+    filteredOptions = filterSelectOptions(allOptions, keyword)
 
     if (filteredOptions.length === 0) {
       consola.warn(`没有匹配 ${pc.cyan(keyword)} 的 skills`)
@@ -224,28 +149,12 @@ async function interactiveUninstall(options: UninstallCommandOptions): Promise<v
     return
   }
 
-  // 按 agentId 分组要删除的 skills
-  const deleteMap = new Map<string, string[]>()
-  for (const key of selectedKeys) {
-    const entry = skillLookup.get(key)
-    if (!entry)
-      continue
-    const existing = deleteMap.get(entry.agentId) || []
-    existing.push(entry.skill.name)
-    deleteMap.set(entry.agentId, existing)
-  }
+  const deleteMap = groupInstalledSkillSelections(selectedKeys, skillLookup)
 
   // 确认删除
   consola.log('')
   consola.warn(`即将删除以下 ${pc.bold(String(selectedKeys.length))} 个 skills:`)
-  for (const [agentId, skillNames] of deleteMap) {
-    const agent = AGENTS.find(a => a.id === agentId)
-    if (!agent)
-      continue
-    for (const skillName of skillNames) {
-      consola.log(`  ${pc.dim('→')} ${pc.red(skillName)} ${pc.dim(`(${agent.name})`)}`)
-    }
-  }
+  printSkillDeletionPlan(deleteMap)
   consola.log('')
 
   const confirmed = await p.confirm({
@@ -304,18 +213,8 @@ export async function uninstallCommand(
     cwd,
   })
 
-  // 输出结果
   consola.log('')
-  let successCount = 0
-  for (const result of results) {
-    if (result.success) {
-      successCount++
-      consola.success(`${pc.green('✔')} ${result.agent} → ${pc.dim(result.path)}`)
-    }
-    else {
-      consola.warn(`${pc.yellow('⚠')} ${result.agent}: ${result.error}`)
-    }
-  }
+  const { successCount } = printCommandResultLines(results)
 
   consola.log('')
   if (successCount > 0) {

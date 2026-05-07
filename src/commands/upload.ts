@@ -57,8 +57,7 @@ export async function uploadCommand(
       message: '请输入 Git 远端 URL',
       placeholder: 'https://github.com/user/skills-repo.git',
       validate: (value) => {
-        if (!value.trim())
-          return '请输入有效的 Git 远端 URL'
+        return validateRequiredText(value, '请输入有效的 Git 远端 URL')
       },
     })
 
@@ -72,8 +71,7 @@ export async function uploadCommand(
       placeholder: 'my-skills',
       initialValue: extractRepoName(urlInput as string),
       validate: (value) => {
-        if (!value.trim())
-          return '请输入上传目标名称'
+        return validateRequiredText(value, '请输入上传目标名称')
       },
     })
 
@@ -271,4 +269,10 @@ function extractRepoName(url: string): string {
   const cleaned = url.replace(/\.git$/, '').replace(/\/+$/, '')
   const lastSegment = cleaned.split('/').pop() ?? ''
   return lastSegment || 'my-skills'
+}
+
+function validateRequiredText(value: string | undefined, message: string): string | undefined {
+  if (!value?.trim())
+    return message
+  return undefined
 }
