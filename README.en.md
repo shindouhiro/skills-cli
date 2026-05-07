@@ -161,10 +161,12 @@ If you prefer managing skills via a graphical interface, start the full-screen d
 skills ui
 ```
 In the Web UI (default `http://localhost:3080`), you can:
-- **Full-screen Dashboard**: View all installed skills in the current project and global scope.
-- **Dynamic Discovery**: Search thousands of skills on [skills.sh](https://skills.sh/) and install them locally or globally with one click.
-- **Interactive Actions**: All install/uninstall actions feature double-confirmation modals and real-time toast notifications.
-- **Assistant Selection**: Filter and multi-select target AI assistants during installation.
+- **Full-screen Dashboard**: A desktop-grade interface for managing all project-local and global skills with intuitive sidebar navigation.
+- **Dynamic Discovery**: Real-time search across thousands of skills on [skills.sh](https://skills.sh/) with filter support and one-click local/global installation.
+- **Warehouse Management**: Integrated settings panel to manage multiple Git remote targets with support for both project-level and global configuration persistence.
+- **Remote Maintenance**: Browse existing skills in your remote repositories and perform remote deletions (automatic Git commit & push) directly from the UI.
+- **Safe Operations**: Critical actions like deletion feature custom, premium confirmation modals and real-time toast notifications.
+- **Premium Aesthetics**: Fully optimized for PC with Catppuccin iconography and smooth animations for a state-of-the-art management experience.
 
 ## 🛠️ Commands
 
