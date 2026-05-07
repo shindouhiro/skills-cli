@@ -163,14 +163,101 @@ export const HTML_CONTENT = `
            })
         }
 
+        async function uploadSkill(name, global) {
+           openConfirm('确认上传', \`即将上传 Skill: \${name} 到配置的 Git 远端，是否继续？\`, 'info', async () => {
+             addToast('正在准备上传...', 'warning')
+             try {
+               const opts = { name, global }
+               const res = await fetch('/api/upload', {
+                 method: 'POST',
+                 headers:{'Content-Type': 'application/json'},
+                 body: JSON.stringify(opts)
+               })
+               const data = await res.json()
+               if (data.success) {
+                 addToast(data.message || '上传成功', 'success')
+               } else {
+                 addToast(data.error || '上传失败', 'error')
+               }
+             } catch(e) {
+               addToast('上传失败: 网络或系统错误', 'error')
+             }
+           })
+        }
+
+        const targets = ref([])
+        const showTargetModal = ref(false)
+        const targetFormData = ref({ name: '', url: '', path: 'skills', branch: '', global: false })
+        const isSavingTarget = ref(false)
+
+        async function fetchTargets() {
+          const res = await fetch('/api/targets')
+          targets.value = await res.json()
+        }
+
+        function openAddTarget() {
+          targetFormData.value = { name: '', url: '', path: 'skills', branch: '', global: false }
+          showTargetModal.value = true
+        }
+
+        async function saveTarget() {
+          if (!targetFormData.value.name || !targetFormData.value.url) {
+             addToast('名称和 URL 是必填项', 'warning')
+             return
+          }
+          isSavingTarget.value = true
+          try {
+             const res = await fetch('/api/targets', {
+               method: 'POST',
+               headers: {'Content-Type': 'application/json'},
+               body: JSON.stringify(targetFormData.value)
+             })
+             const data = await res.json()
+             if (data.success) {
+               addToast('上传目标添加成功', 'success')
+               showTargetModal.value = false
+               fetchTargets()
+             } else {
+               addToast(data.error || '添加失败', 'error')
+             }
+          } catch(e) {
+             addToast('添加失败', 'error')
+          } finally {
+             isSavingTarget.value = false
+          }
+        }
+
+        async function deleteTarget(name, global) {
+           openConfirm('确认删除', \`确定要删除上传目标 \${name} 吗？\`, 'danger', async () => {
+             try {
+               const res = await fetch('/api/targets', {
+                 method: 'DELETE',
+                 headers: {'Content-Type': 'application/json'},
+                 body: JSON.stringify({ name, global })
+               })
+               const data = await res.json()
+               if (data.success) {
+                 addToast('删除成功', 'success')
+                 fetchTargets()
+               } else {
+                 addToast(data.error || '删除失败', 'error')
+               }
+             } catch(e) {
+               addToast('删除失败', 'error')
+             }
+           })
+        }
+
         onMounted(() => {
           fetchAgents()
           fetchSkills()
+          fetchTargets()
         })
 
         return {
-          activeTab, agents, localSkills, globalSkills, keyword, searchResults, isSearching, search, openInstallModal, uninstall,
+          activeTab, agents, localSkills, globalSkills, keyword, searchResults, isSearching, search, openInstallModal, uninstall, uploadSkill,
           showInstallModal, isInstalling, installData, agentFilter, selectedAgents, filteredAgents, confirmInstall,
+          targets, showTargetModal, targetFormData, isSavingTarget, openAddTarget, saveTarget, deleteTarget,
           toasts, confirmModal, handleConfirm,
           hasLocal: () => Object.keys(localSkills.value).length > 0,
           hasGlobal: () => Object.keys(globalSkills.value).length > 0
@@ -221,6 +308,9 @@ export const HTML_CONTENT = `
              <button @click="activeTab='search'" :class="['w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-300', activeTab==='search'?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20':'text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-transparent']">
                <iconify-icon icon="catppuccin:search" class="text-2xl"></iconify-icon> 发现与安装
              </button>
+             <button @click="activeTab='targets'" :class="['w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-300', activeTab==='targets'?'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20':'text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-transparent']">
+               <iconify-icon icon="catppuccin:folder-git" class="text-2xl"></iconify-icon> 仓库设置
+             </button>
           </nav>
           <div class="p-6 text-xs text-slate-500 border-t border-slate-800">
              Skills CLI Dashboard v1.0
@@ -234,6 +324,7 @@ export const HTML_CONTENT = `
              <h2 class="text-xl font-bold text-slate-100 flex items-center gap-3">
                 <span v-if="activeTab==='installed'">已安装的 Skills</span>
                 <span v-if="activeTab==='search'">发现新的 Skills</span>
+                <span v-if="activeTab==='targets'">上传仓库配置</span>
              </h2>
           </header>
 
@@ -260,7 +351,11 @@ export const HTML_CONTENT = `
                            <span v-if="s.meta?.version" class="text-xs font-mono bg-slate-800 text-emerald-400 px-2 py-1 rounded-md border border-slate-700 whitespace-nowrap shrink-0">v{{s.meta.version}}</span>
                          </h4>
                          <p class="text-sm text-slate-400 mt-3 line-clamp-3 leading-relaxed flex-1">{{ s.meta?.description || '无描述信息' }}</p>
-                         <div class="mt-4 pt-3 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-auto border-t border-slate-800">
+                         <div class="mt-4 pt-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-auto border-t border-slate-800">
+                           <button @click="uploadSkill(s.name, false)" class="relative group/btn text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors border border-transparent hover:border-blue-500/20">
+                             <iconify-icon icon="lucide:upload-cloud" class="text-lg"></iconify-icon>
+                             <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-xs font-medium text-white bg-slate-900 rounded-lg shadow-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-slate-700/50 z-10">上传至仓库</div>
+                           </button>
                            <button @click="uninstall(s.name, agentId, false)" class="relative group/btn text-red-400 hover:bg-red-500/10 hover:text-red-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors border border-transparent hover:border-red-500/20">
                              <iconify-icon icon="lucide:trash-2" class="text-lg"></iconify-icon>
                              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-xs font-medium text-white bg-slate-900 rounded-lg shadow-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-slate-700/50 z-10">卸载</div>
@@ -291,7 +386,11 @@ export const HTML_CONTENT = `
                            <span v-if="s.meta?.version" class="text-xs font-mono bg-slate-800 text-cyan-400 px-2 py-1 rounded-md border border-slate-700 whitespace-nowrap shrink-0">v{{s.meta.version}}</span>
                          </h4>
                          <p class="text-sm text-slate-400 mt-3 line-clamp-3 leading-relaxed flex-1">{{ s.meta?.description || '无描述信息' }}</p>
-                         <div class="mt-4 pt-3 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-auto border-t border-slate-800">
+                         <div class="mt-4 pt-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-auto border-t border-slate-800">
+                           <button @click="uploadSkill(s.name, true)" class="relative group/btn text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors border border-transparent hover:border-blue-500/20">
+                             <iconify-icon icon="lucide:upload-cloud" class="text-lg"></iconify-icon>
+                             <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-xs font-medium text-white bg-slate-900 rounded-lg shadow-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-slate-700/50 z-10">上传至仓库</div>
+                           </button>
                            <button @click="uninstall(s.name, agentId, true)" class="relative group/btn text-red-400 hover:bg-red-500/10 hover:text-red-300 w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors border border-transparent hover:border-red-500/20">
                              <iconify-icon icon="lucide:trash-2" class="text-lg"></iconify-icon>
                              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 text-xs font-medium text-white bg-slate-900 rounded-lg shadow-lg opacity-0 group-hover/btn:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-slate-700/50 z-10">卸载</div>
@@ -345,7 +444,94 @@ export const HTML_CONTENT = `
                  <div class="text-slate-400 text-xl font-medium">输入关键字，探索无尽的 AI 潜能</div>
                </div>
              </div>
+
+             <div v-if="activeTab === 'targets'" class="w-full space-y-12 animate-fade-in pb-10">
+                <section>
+                  <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                      <span class="w-1.5 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_#3b82f6]"></span>
+                      <h2 class="text-xl font-bold text-slate-100">上传目标仓库配置</h2>
+                    </div>
+                    <button @click="openAddTarget" class="bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 text-sm border border-blue-500/30 hover:border-blue-500/50">
+                      <iconify-icon icon="lucide:plus"></iconify-icon> 添加上传目标
+                    </button>
+                  </div>
+
+                  <div v-if="targets.length === 0" class="glass rounded-2xl p-16 text-center text-slate-400 border-dashed border-2 border-slate-800 flex flex-col items-center">
+                    <iconify-icon icon="lucide:server-off" class="text-6xl mb-4 opacity-80"></iconify-icon>
+                    <div>尚未配置任何上传目标</div>
+                  </div>
+
+                  <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div v-for="t in targets" :key="t.name" class="glass p-5 rounded-2xl hover:-translate-y-1 transition-all duration-300 border border-slate-700/50 flex flex-col h-full group hover:border-blue-500/30">
+                       <h4 class="font-bold text-lg flex items-center gap-2 mb-2">
+                         <iconify-icon icon="lucide:server" class="text-blue-400"></iconify-icon>
+                         <span class="text-slate-200">{{ t.name }}</span>
+                       </h4>
+                       <div class="text-sm text-slate-400 space-y-2 mt-2">
+                         <div class="flex items-start gap-2">
+                           <iconify-icon icon="lucide:link" class="mt-0.5 opacity-70"></iconify-icon>
+                           <span class="truncate" :title="t.url">{{ t.url }}</span>
+                         </div>
+                         <div class="flex items-center gap-2">
+                           <iconify-icon icon="lucide:folder" class="opacity-70"></iconify-icon>
+                           <span>{{ t.path || 'skills' }}</span>
+                         </div>
+                         <div v-if="t.branch" class="flex items-center gap-2">
+                           <iconify-icon icon="lucide:git-branch" class="opacity-70"></iconify-icon>
+                           <span>{{ t.branch }}</span>
+                         </div>
+                       </div>
+                       <div class="mt-4 pt-4 border-t border-slate-800 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                         <button @click="deleteTarget(t.name, false)" class="text-red-400 hover:bg-red-500/10 p-2 rounded-lg transition-colors border border-transparent hover:border-red-500/20" title="删除">
+                           <iconify-icon icon="lucide:trash-2" class="text-lg"></iconify-icon>
+                         </button>
+                       </div>
+                    </div>
+                  </div>
+                </section>
+             </div>
           </main>
+
+        <!-- Target Modal -->
+        <div v-if="showTargetModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm animate-fade-in p-4">
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-[500px] flex flex-col overflow-hidden transform transition-all">
+            <div class="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-800/30">
+              <h3 class="text-xl font-bold text-slate-100 flex items-center gap-2">
+                <iconify-icon icon="lucide:server" class="text-blue-400"></iconify-icon>添加上传目标
+              </h3>
+              <button @click="showTargetModal = false" class="text-slate-400 hover:text-white transition-colors"><iconify-icon icon="lucide:x" class="text-2xl"></iconify-icon></button>
+            </div>
+            <div class="p-6 space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">名称 (唯一标识) <span class="text-red-400">*</span></label>
+                <input v-model="targetFormData.name" placeholder="例如: my-skills" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Git 远端 URL <span class="text-red-400">*</span></label>
+                <input v-model="targetFormData.url" placeholder="例如: git@github.com:owner/repo.git" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">技能子目录名称</label>
+                <input v-model="targetFormData.path" placeholder="默认: skills" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition-all">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">目标分支 (可选)</label>
+                <input v-model="targetFormData.branch" placeholder="留空使用远端默认分支" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-blue-500 transition-all">
+              </div>
+              <div class="flex items-center gap-2 mt-2">
+                <input type="checkbox" id="globalTarget" v-model="targetFormData.global" class="w-4 h-4 rounded border-slate-600 bg-slate-700 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-900">
+                <label for="globalTarget" class="text-sm text-slate-300 cursor-pointer">保存到全局配置 (~/.config/skills-cli/.skillsrc)</label>
+              </div>
+            </div>
+            <div class="p-4 border-t border-slate-800 bg-slate-800/30 flex justify-end gap-3">
+              <button @click="showTargetModal = false" class="px-5 py-2.5 rounded-xl font-medium text-slate-300 hover:bg-slate-800 transition-colors">取消</button>
+              <button @click="saveTarget" :disabled="isSavingTarget || !targetFormData.name || !targetFormData.url" class="px-5 py-2.5 rounded-xl font-medium text-white bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2">
+                <iconify-icon v-if="isSavingTarget" icon="lucide:loader-2" class="animate-spin"></iconify-icon> 保 存
+              </button>
+            </div>
+          </div>
+        </div>
         </div>
 
         <!-- Install Modal -->
