@@ -155,6 +155,17 @@ skills rm --filter vue        # only show skills matching "vue"
 skills rm -g -f testing       # filter "testing" in global skills
 ```
 
+### 7. Visual Management (Web UI)
+If you prefer managing skills via a graphical interface, start the full-screen desktop dashboard with the `ui` command:
+```bash
+skills ui
+```
+In the Web UI (default `http://localhost:3080`), you can:
+- **Full-screen Dashboard**: View all installed skills in the current project and global scope.
+- **Dynamic Discovery**: Search thousands of skills on [skills.sh](https://skills.sh/) and install them locally or globally with one click.
+- **Interactive Actions**: All install/uninstall actions feature double-confirmation modals and real-time toast notifications.
+- **Assistant Selection**: Filter and multi-select target AI assistants during installation.
+
 ## 🛠️ Commands
 
 | Command | Aliases | Description | Options |
@@ -166,6 +177,7 @@ skills rm -g -f testing       # filter "testing" in global skills
 | `install <name>` | `i`, `add` | Install a skill | `-a, --agent [agents]`: Target assistants (comma-separated; without a value, opens the prompt)<br>`-g, --global`: Install to global directory<br>`-f, --force`: Force overwrite existing skill<br>`-l, --link`: Use symlink mode (recommended)<br>`-i, --interactive`: Explicitly enter interactive selection |
 | `list` | `ls` | List installed skills | `-g, --global`: List globally installed skills |
 | `uninstall [name]` | `u`, `remove`, `rm`, `delete` | Uninstall skill (omit name for multi-select mode) | `-a, --agent <agents>`: Target assistants<br>`-g, --global`: Remove from global directory<br>`-f, --filter <keyword>`: Filter skills list by keyword |
+| `ui` | - | Start the full-screen Web management UI | `-p, --port <number>`: Port to listen on (default 3080) |
 | `init` | - | Initialize `.skillsrc` config file | `-g, --global`: Initialize global config |
 
 ## 📂 Supported AI Assistants (30+)

@@ -154,6 +154,17 @@ skills rm --filter vue        # 只显示含 "vue" 的技能
 skills rm -g -f testing       # 全局技能中过滤 "testing"
 ```
 
+### 7. 可视化管理 (Web UI)
+如果你更喜欢通过图形界面来管理你的技能，可以使用 `ui` 命令启动全屏桌面端管理面板：
+```bash
+skills ui
+```
+启动后，你可以在浏览器中（默认 `http://localhost:3080`）：
+- **全屏概览**：清晰查看本项目及全局已安装的所有技能。
+- **动态搜索**：实时搜索 [skills.sh](https://skills.sh/) 上的海量技能，并支持本地/全局一键安装。
+- **交互式操作**：所有的安装、卸载操作都带有二次确认及实时消息通知。
+- **助手过滤**：安装时支持下拉筛选目标 AI 助手，支持多选批量安装。
+
 ## 🛠️ 指令一览
 
 | 指令 | 别名 | 描述 | 选项 |
@@ -165,6 +176,7 @@ skills rm -g -f testing       # 全局技能中过滤 "testing"
 | `install <name>` | `i`, `add` | 安装指定的 skill | `-a, --agent [agents]`: 指定目标助手 (逗号分隔；不传值则弹选择)<br>`-g, --global`: 安装到全局用户目录<br>`-f, --force`: 强制覆盖已存在的 skill<br>`-l, --link`: 使用符号链接模式 (推荐)<br>`-i, --interactive`: 显式进入交互式选择模式 |
 | `list` | `ls` | 列出已安装的 skills | `-g, --global`: 列出全局已安装的 skills |
 | `uninstall [name]` | `u`, `remove`, `rm`, `delete` | 卸载 skill（不传 name 进入多选模式） | `-a, --agent <agents>`: 指定目标助手<br>`-g, --global`: 从全局目录删除<br>`-f, --filter <keyword>`: 按关键字过滤 skills 列表 |
+| `ui` | - | 启动全屏 Web 管理界面 | `-p, --port <number>`: 指定服务端口（默认 3080） |
 | `init` | - | 初始化 `.skillsrc` 配置文件 | `-g, --global`: 初始化全局配置 |
 
 ## 📂 支持的 AI 助手 (30+)
