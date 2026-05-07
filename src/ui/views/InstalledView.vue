@@ -137,29 +137,43 @@ onMounted(fetchSkills)
             v-for="skill in skills"
             :id="`installed-skill-card-${section.key}-${agentId}-${skill.name}`"
             :key="skill.name"
-            class="glass group relative flex min-h-[180px] flex-col rounded-2xl border border-slate-700/50 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/10"
+            class="glass group relative flex min-h-[180px] flex-col rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+            :class="skill.broken
+              ? 'border-red-500/40 hover:border-red-500/60 hover:shadow-red-500/10 opacity-70'
+              : 'border-slate-700/50 hover:border-emerald-500/30 hover:shadow-emerald-500/10'"
           >
             <h4 class="flex items-start justify-between text-lg font-bold">
               <span class="truncate pr-2 text-slate-200">{{ skill.name }}</span>
-              <span v-if="skill.meta?.version" class="shrink-0 whitespace-nowrap rounded-md border border-slate-700 bg-slate-800 px-2 py-1 font-mono text-xs text-emerald-400">
+              <span v-if="skill.broken" class="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1 font-mono text-xs text-red-400">
+                <iconify-icon icon="lucide:link-2-off" class="text-sm" />
+                断裂
+              </span>
+              <span v-else-if="skill.meta?.version" class="shrink-0 whitespace-nowrap rounded-md border border-slate-700 bg-slate-800 px-2 py-1 font-mono text-xs text-emerald-400">
                 v{{ skill.meta.version }}
               </span>
             </h4>
 
             <div class="group/desc relative mt-3 flex-1">
-              <p class="line-clamp-2 text-sm leading-relaxed text-slate-400">
-                {{ skill.meta?.description || '无描述信息' }}
+              <p v-if="skill.broken" class="text-sm leading-relaxed text-red-400/80">
+                <iconify-icon icon="lucide:alert-triangle" class="mr-1 align-text-top text-base" />
+                符号链接目标不存在，请修复或卸载
               </p>
-              <div
-                v-if="skill.meta?.description && skill.meta.description.length > 40"
-                class="pointer-events-none absolute bottom-full left-0 z-30 mb-2 w-72 whitespace-normal rounded-xl border border-slate-600 bg-slate-900/95 px-4 py-3 text-xs leading-relaxed text-slate-200 opacity-0 shadow-2xl backdrop-blur-sm transition-opacity duration-200 group-hover/desc:opacity-100"
-              >
-                {{ skill.meta.description }}
-              </div>
+              <template v-else>
+                <p class="line-clamp-2 text-sm leading-relaxed text-slate-400">
+                  {{ skill.meta?.description || '无描述信息' }}
+                </p>
+                <div
+                  v-if="skill.meta?.description && skill.meta.description.length > 40"
+                  class="pointer-events-none absolute bottom-full left-0 z-30 mb-2 w-72 whitespace-normal rounded-xl border border-slate-600 bg-slate-900/95 px-4 py-3 text-xs leading-relaxed text-slate-200 opacity-0 shadow-2xl backdrop-blur-sm transition-opacity duration-200 group-hover/desc:opacity-100"
+                >
+                  {{ skill.meta.description }}
+                </div>
+              </template>
             </div>
 
             <div class="mt-auto flex justify-end gap-2 border-t border-slate-800 pt-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
               <button
+                v-if="!skill.broken"
                 :id="`installed-upload-button-${section.key}-${agentId}-${skill.name}`"
                 type="button"
                 class="group/btn relative flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-sm font-medium text-blue-400 transition-colors hover:border-blue-500/20 hover:bg-blue-500/10 hover:text-blue-300"

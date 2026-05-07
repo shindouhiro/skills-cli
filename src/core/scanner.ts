@@ -60,14 +60,16 @@ function scanSkillsInDir(agent: AgentDefinition, skillsDir: string): InstalledSk
       continue
 
     const skillDir = join(skillsDir, entry.name)
-    if (!existsSync(skillDir))
-      continue
+
+    // 符号链接目标不存在 → 标记为断裂但仍加入结果
+    const isBroken = entry.isSymbolicLink() && !existsSync(skillDir)
 
     skills.push({
       name: entry.name,
       path: skillDir,
       agent,
-      meta: readSkillMeta(skillDir),
+      meta: isBroken ? undefined : readSkillMeta(skillDir),
+      broken: isBroken || undefined,
     })
   }
 

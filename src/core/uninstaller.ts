@@ -1,5 +1,5 @@
 import type { AgentDefinition } from '~/types'
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync, lstatSync, rmSync, unlinkSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { expandHome } from '~/core/agents'
 import { isSafeSkillName } from '~/core/skill-name'
@@ -49,7 +49,14 @@ export async function uninstallSkill(options: UninstallOptions): Promise<Uninsta
     const targetDir = join(targetBase, name)
 
     try {
-      if (!existsSync(targetDir)) {
+      // lstatSync 不跟随符号链接，能检测到断裂的 symlink
+      let stat: ReturnType<typeof lstatSync> | null = null
+      try {
+        stat = lstatSync(targetDir)
+      }
+      catch {}
+
+      if (!stat) {
         results.push({
           skill: name,
           agent: agent.name,
@@ -60,7 +67,14 @@ export async function uninstallSkill(options: UninstallOptions): Promise<Uninsta
         continue
       }
 
-      rmSync(targetDir, { recursive: true, force: true })
+      // 符号链接（含断裂链接）用 unlinkSync 直接删除链接自身
+      // rmSync 对断裂符号链接会因 stat 失败 + force:true 而静默跳过
+      if (stat.isSymbolicLink()) {
+        unlinkSync(targetDir)
+      }
+      else {
+        rmSync(targetDir, { recursive: true, force: true })
+      }
 
       results.push({
         skill: name,

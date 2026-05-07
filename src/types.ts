@@ -54,6 +54,8 @@ export interface InstalledSkill {
   path: string
   agent: AgentDefinition
   meta?: SkillMeta
+  /** 符号链接目标不存在（断裂链接） */
+  broken?: boolean
 }
 
 /**
