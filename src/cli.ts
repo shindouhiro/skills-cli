@@ -8,6 +8,7 @@ import { installCommand } from '~/commands/install'
 import { listCommand } from '~/commands/list'
 import { searchCommand } from '~/commands/search'
 import { sourceAddCommand } from '~/commands/source'
+import { uiCommand } from '~/commands/ui'
 import { uninstallCommand } from '~/commands/uninstall'
 import { uploadCommand, uploadTargetAddCommand } from '~/commands/upload'
 import { version } from '../package.json'
@@ -114,6 +115,15 @@ cli
   .action(async (names: string[] | undefined, options: { all?: boolean, dryRun?: boolean, global?: boolean, message?: string, target?: string }) => {
     showBanner()
     await uploadCommand(names, options)
+  })
+
+// === ui ===
+cli
+  .command('ui', '打开 Web 界面进行可视化操作')
+  .option('-p, --port <port>', '指定服务器端口 (默认 3080)')
+  .action(async (options: { port?: string }) => {
+    showBanner()
+    await uiCommand({ port: options.port ? Number(options.port) : undefined })
   })
 
 // === Global options ===

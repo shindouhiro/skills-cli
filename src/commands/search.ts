@@ -119,29 +119,7 @@ export async function searchCommand(keyword: string, options: SearchOptions = {}
     return
   }
 
-  // 并行搜索所有数据源
-  const sourceResults = await Promise.allSettled(
-    sources.map(source => searchSource(source, keyword)),
-  )
-
-  // 收集所有结果 & 错误
-  const allResults: SkillSearchResult[] = []
-  for (const settled of sourceResults) {
-    if (settled.status === 'rejected') {
-      consola.warn(`数据源查询异常: ${settled.reason}`)
-      continue
-    }
-    const { error, results, source } = settled.value
-    if (error) {
-      consola.warn(`数据源 ${source.name} 查询失败: ${error.message}`)
-      continue
-    }
-    allResults.push(...results)
-  }
-
-  // 去重 → 排序
-  const unique = deduplicateResults(allResults)
-  const sorted = sortByRelevance(unique, keyword)
+  const sorted = await executeSearch(keyword, sources)
 
   // 截断
   const truncated = limit > 0 ? sorted.slice(0, limit) : sorted
@@ -167,7 +145,7 @@ export async function searchCommand(keyword: string, options: SearchOptions = {}
 /**
  * 根据配置创建数据源实例
  */
-function createSourcesFromConfig(configs: SourceConfig[]): SkillSource[] {
+export function createSourcesFromConfig(configs: SourceConfig[]): SkillSource[] {
   return configs
     .map((c) => {
       if (c.type === 'github')
@@ -177,4 +155,31 @@ function createSourcesFromConfig(configs: SourceConfig[]): SkillSource[] {
       return null
     })
     .filter((s): s is SkillSource => s !== null)
+}
+
+/**
+ * 核心搜索逻辑
+ */
+export async function executeSearch(keyword: string, sources: SkillSource[]): Promise<SkillSearchResult[]> {
+  // 并行搜索所有数据源
+  const sourceResults = await Promise.allSettled(
+    sources.map(source => searchSource(source, keyword)),
+  )
+
+  // 收集所有结果
+  const allResults: SkillSearchResult[] = []
+  for (const settled of sourceResults) {
+    if (settled.status === 'rejected') {
+      continue
+    }
+    const { error, results } = settled.value
+    if (error) {
+      continue
+    }
+    allResults.push(...results)
+  }
+
+  // 去重 → 排序
+  const unique = deduplicateResults(allResults)
+  return sortByRelevance(unique, keyword)
 }
