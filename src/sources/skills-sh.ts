@@ -20,14 +20,30 @@ export function createSkillsShSource(baseUrl = DEFAULT_BASE_URL): SkillSource {
     name: `skills.sh:${normalizedBaseUrl}`,
 
     async search(keyword: string): Promise<SkillSearchResult[]> {
-      // 缓存 sitemap，5 分钟内不重复请求
-      const cacheKey = `skills-sh:sitemap:${normalizedBaseUrl}`
-      const sitemap = await withCache(cacheKey, () =>
-        ofetch<string>(`${normalizedBaseUrl}/sitemap.xml`, {
-          parseResponse: txt => txt,
-        }))
+      const fetchSitemapContent = async (url: string) => {
+        const cacheKey = `skills-sh:sitemap-content:${url}`
+        return await withCache(cacheKey, () =>
+          ofetch<string>(url, { parseResponse: txt => txt }))
+      }
 
-      const entries = parseSkillsShSitemap(sitemap)
+      const mainSitemapUrl = `${normalizedBaseUrl}/sitemap.xml`
+      const mainSitemap = await fetchSitemapContent(mainSitemapUrl)
+      let entries: SkillsShEntry[] = []
+
+      if (mainSitemap.includes('<sitemapindex')) {
+        const allUrls = [...mainSitemap.matchAll(/<loc>([^<]+)<\/loc>/gu)].map(match => match[1])
+        const skillSitemaps = allUrls.filter(url => url.includes('sitemap-skills'))
+        const targetSitemaps = skillSitemaps.length > 0 ? skillSitemaps : allUrls
+
+        const contents = await Promise.all(targetSitemaps.map(fetchSitemapContent))
+        for (const content of contents) {
+          entries.push(...parseSkillsShSitemap(content))
+        }
+      }
+      else {
+        entries = parseSkillsShSitemap(mainSitemap)
+      }
+
       const lowerKeyword = keyword.toLowerCase()
 
       return entries
