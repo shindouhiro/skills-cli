@@ -40,20 +40,20 @@ const {
 
 <template>
   <div class="animate-fade-in w-full pb-10">
-    <div class="glass mx-auto mb-10 flex w-full max-w-5xl items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-700/50 p-2 shadow-lg shadow-black/20 transition-all focus-within:ring-2 focus-within:ring-emerald-500/50">
-      <iconify-icon icon="catppuccin:search" class="pl-5 text-3xl opacity-80" />
+    <div class="mx-auto mb-10 flex w-full max-w-4xl items-center gap-3 rounded-2xl border border-slate-300 bg-white p-2.5 shadow-sm transition-all focus-within:border-emerald-500/50 focus-within:ring-4 focus-within:ring-emerald-500/10 dark:border-slate-700 dark:bg-slate-900 dark:shadow-none dark:focus-within:border-emerald-500/50 dark:focus-within:ring-emerald-500/10">
+      <iconify-icon icon="lucide:search" class="pl-4 text-2xl text-slate-400 dark:text-slate-500" />
       <input
         id="skill-search-input"
         v-model="keyword"
         :placeholder="t('search.inputPlaceholder')"
-        class="flex-1 border-none bg-transparent px-2 py-4 text-lg text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none"
+        class="flex-1 bg-transparent px-3 py-3 text-lg text-slate-800 placeholder-slate-400 focus:outline-none dark:text-slate-200 dark:placeholder-slate-500"
         @keyup.enter="search"
       >
       <button
         id="skill-search-button"
         type="button"
         :disabled="isSearching"
-        class="rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 px-10 py-4 text-lg font-bold text-slate-900 shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-400 hover:to-emerald-300 disabled:opacity-50"
+        class="rounded-xl bg-emerald-500 px-8 py-3 text-base font-bold text-white shadow-sm transition-all hover:bg-emerald-600 active:scale-95 disabled:opacity-50 dark:bg-emerald-600 dark:hover:bg-emerald-500"
         @click="search"
       >
         {{ t('search.button') }}
