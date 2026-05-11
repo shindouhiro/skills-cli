@@ -69,7 +69,7 @@ onMounted(fetchConfig)
               id="config-scope-project-button"
               type="button"
               class="rounded-md px-3 py-1.5 text-xs font-medium transition-all"
-              :class="configScope === 'project' ? 'bg-amber-500/20 text-amber-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'"
+              :class="configScope === 'project' ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm shadow-amber-500/10' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
               @click="setScope('project')"
             >
               {{ t('config.projectScope') }}
@@ -78,7 +78,7 @@ onMounted(fetchConfig)
               id="config-scope-global-button"
               type="button"
               class="rounded-md px-3 py-1.5 text-xs font-medium transition-all"
-              :class="configScope === 'global' ? 'bg-amber-500/20 text-amber-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'"
+              :class="configScope === 'global' ? 'bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm shadow-amber-500/10' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'"
               @click="setScope('global')"
             >
               {{ t('config.globalScope') }}
@@ -117,7 +117,7 @@ onMounted(fetchConfig)
           id="config-editor-textarea"
           v-model="configText"
           spellcheck="false"
-          class="custom-scroll min-h-[400px] w-full resize-y rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-950/80 px-5 py-4 font-mono text-sm leading-relaxed text-emerald-300 transition-all [tab-size:2] focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+          class="custom-scroll min-h-[400px] w-full resize-y rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/80 px-5 py-4 font-mono text-sm leading-relaxed text-emerald-600 dark:text-emerald-300 transition-all [tab-size:2] focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
         />
         <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
           <iconify-icon icon="lucide:info" class="text-base" />
