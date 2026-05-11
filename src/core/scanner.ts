@@ -77,14 +77,27 @@ function scanSkillsInDir(agent: AgentDefinition, skillsDir: string): InstalledSk
 }
 
 function scanAllAgents(
-  resolveSkillsDir: (agent: AgentDefinition) => string,
+  resolveSkillsDirs: (agent: AgentDefinition) => string[],
 ): Map<string, InstalledSkill[]> {
   const result = new Map<string, InstalledSkill[]>()
 
   for (const agent of AGENTS) {
-    const skills = scanSkillsInDir(agent, resolveSkillsDir(agent))
-    if (skills.length > 0)
-      result.set(agent.id, skills)
+    const dirs = resolveSkillsDirs(agent)
+    const seen = new Set<string>()
+    const combined: InstalledSkill[] = []
+
+    for (const dir of dirs) {
+      const skills = scanSkillsInDir(agent, dir)
+      for (const skill of skills) {
+        if (!seen.has(skill.name)) {
+          seen.add(skill.name)
+          combined.push(skill)
+        }
+      }
+    }
+
+    if (combined.length > 0)
+      result.set(agent.id, combined)
   }
 
   return result
@@ -95,12 +108,15 @@ function scanAllAgents(
  */
 export function scanLocalSkills(cwd?: string): Map<string, InstalledSkill[]> {
   const baseDir = resolve(cwd || process.cwd())
-  return scanAllAgents(agent => resolve(baseDir, agent.projectDir))
+  return scanAllAgents(agent => [resolve(baseDir, agent.projectDir)])
 }
 
 /**
  * 扫描全局已安装的 skills（用户级）
  */
 export function scanGlobalSkills(): Map<string, InstalledSkill[]> {
-  return scanAllAgents(agent => expandHome(agent.globalDir))
+  return scanAllAgents(agent => [
+    expandHome(agent.globalDir),
+    ...(agent.extraGlobalDirs?.map(expandHome) ?? []),
+  ])
 }

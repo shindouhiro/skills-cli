@@ -53,7 +53,11 @@ export function parseAgentIds(value: string): string[] {
 }
 
 export function getAgentSkillDirLabel(agent: AgentDefinition, global?: boolean): string {
-  return global ? agent.globalDir : agent.projectDir
+  const base = global ? agent.globalDir : agent.projectDir
+  if (global && agent.extraGlobalDirs?.length) {
+    return `${base} +${agent.extraGlobalDirs.length}`
+  }
+  return base
 }
 
 export function createAgentSelectOptions(global?: boolean): SelectOption[] {

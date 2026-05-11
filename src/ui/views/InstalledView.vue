@@ -10,6 +10,24 @@ const props = defineProps<{
   openConfirm: (title: string, message: string, type: ConfirmType, onConfirm: () => void | Promise<void>) => void
 }>()
 
+/**
+ * 判断 skill 是否来自额外全局路径（如 ~/.agents/skills/）
+ */
+function getSkillSourceLabel(skill: InstalledSkill, agentId: string): string | undefined {
+  const agent = getAgent(agentId)
+  if (!agent?.extraGlobalDirs?.length)
+    return undefined
+
+  // 检查 skill.path 是否匹配某个 extraGlobalDir
+  for (const extraDir of agent.extraGlobalDirs) {
+    // expandHome: 将 ~ 替换为 $HOME
+    const expanded = extraDir.replace(/^~/, '')
+    if (skill.path.includes(expanded) || skill.path.includes('.agents/skills'))
+      return extraDir
+  }
+  return undefined
+}
+
 interface SkillSection {
   key: 'local' | 'global'
   title: string
@@ -125,10 +143,17 @@ onMounted(fetchSkills)
         :key="agentId"
         class="mb-8 rounded-2xl border border-slate-800 bg-slate-800/20 p-6"
       >
-        <h3 class="mb-6 flex items-center gap-2 text-lg font-medium">
+        <h3 class="mb-6 flex flex-wrap items-center gap-2 text-lg font-medium">
           <div class="flex items-center gap-2.5 rounded-xl border px-3 py-1.5 shadow-sm" :class="section.accentClass">
             <AgentIcon :icon="getAgent(agentId)?.icon" />
             <span>{{ getAgent(agentId)?.name || agentId }}</span>
+          </div>
+          <div
+            v-if="section.scopeGlobal && getAgent(agentId)?.extraGlobalDirs?.length"
+            class="flex items-center gap-1.5 rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-xs text-violet-400"
+          >
+            <iconify-icon icon="lucide:folder-tree" class="text-sm" />
+            <span>{{ 1 + (getAgent(agentId)?.extraGlobalDirs?.length || 0) }} 个发现路径</span>
           </div>
         </h3>
 
@@ -144,14 +169,23 @@ onMounted(fetchSkills)
           >
             <h4 class="flex items-start justify-between text-lg font-bold">
               <span class="truncate pr-2 text-slate-200">{{ skill.name }}</span>
-              <span v-if="skill.broken" class="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1 font-mono text-xs text-red-400">
-                <iconify-icon icon="lucide:link-2-off" class="text-sm" />
-                断裂
-              </span>
-              <span v-else-if="skill.meta?.version" class="shrink-0 whitespace-nowrap rounded-md border border-slate-700 bg-slate-800 px-2 py-1 font-mono text-xs text-emerald-400">
-                v{{ skill.meta.version }}
-              </span>
+              <div class="flex shrink-0 items-center gap-1.5">
+                <span v-if="skill.broken" class="flex items-center gap-1 whitespace-nowrap rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1 font-mono text-xs text-red-400">
+                  <iconify-icon icon="lucide:link-2-off" class="text-sm" />
+                  断裂
+                </span>
+                <span v-else-if="skill.meta?.version" class="whitespace-nowrap rounded-md border border-slate-700 bg-slate-800 px-2 py-1 font-mono text-xs text-emerald-400">
+                  v{{ skill.meta.version }}
+                </span>
+              </div>
             </h4>
+            <div
+              v-if="section.scopeGlobal && getSkillSourceLabel(skill, agentId)"
+              class="mt-1.5 flex items-center gap-1 text-xs text-violet-400/80"
+            >
+              <iconify-icon icon="lucide:folder-symlink" class="text-sm" />
+              <span class="font-mono">{{ getSkillSourceLabel(skill, agentId) }}</span>
+            </div>
 
             <div class="group/desc relative mt-3 flex-1">
               <p v-if="skill.broken" class="text-sm leading-relaxed text-red-400/80">

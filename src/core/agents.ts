@@ -5,7 +5,7 @@ import process from 'node:process'
  * 30+ AI 编码助手的 skills 目录映射表
  */
 export const AGENTS: AgentDefinition[] = [
-  { name: 'Antigravity', id: 'antigravity', projectDir: '.agent/skills/', globalDir: '~/.gemini/antigravity/skills/', icon: 'ai:antigravity-color' },
+  { name: 'Antigravity', id: 'antigravity', projectDir: '.agent/skills/', globalDir: '~/.gemini/antigravity/skills/', extraGlobalDirs: ['~/.agents/skills/'], icon: 'ai:antigravity-color' },
   { name: 'Claude Code', id: 'claude-code', projectDir: '.claude/skills/', globalDir: '~/.claude/skills/', icon: 'ai:claude' },
   { name: 'Moltbot', id: 'moltbot', projectDir: 'skills/', globalDir: '~/.moltbot/skills/', icon: 'lucide:bot' },
   { name: 'Cline', id: 'cline', projectDir: '.cline/skills/', globalDir: '~/.cline/skills/', icon: 'ai:cline' },
