@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ConfirmState } from '../../composables/useConfirm'
+import { useI18n } from 'vue-i18n'
 
 defineProps<{
   state: Readonly<ConfirmState>
@@ -9,6 +10,8 @@ const emit = defineEmits<{
   close: []
   confirm: []
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
@@ -38,7 +41,7 @@ const emit = defineEmits<{
           class="rounded-xl px-6 py-2 font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
           @click="emit('close')"
         >
-          取消
+          {{ t('common.cancel') }}
         </button>
         <button
           id="confirm-modal-confirm-button"
@@ -49,7 +52,7 @@ const emit = defineEmits<{
             : 'bg-gradient-to-r from-emerald-600 to-emerald-500 shadow-emerald-500/20 hover:from-emerald-500 hover:to-emerald-400'"
           @click="emit('confirm')"
         >
-          确定
+          {{ t('common.confirmAction') }}
         </button>
       </div>
     </div>

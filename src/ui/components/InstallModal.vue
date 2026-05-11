@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AgentDefinition } from '../types/ui'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AgentIcon from './common/AgentIcon.vue'
 
 const props = defineProps<{
@@ -19,6 +20,8 @@ const emit = defineEmits<{
   'update:filter': [value: string]
   'update:selectedAgents': [value: string[]]
 }>()
+
+const { t } = useI18n()
 
 const filteredAgents = computed(() => {
   const keyword = props.filter.trim().toLowerCase()
@@ -50,9 +53,9 @@ function selectVisibleAgents(): void {
       <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-200/50 dark:bg-slate-800/50 px-6 py-5">
         <h3 class="flex items-center gap-3 text-xl font-bold">
           <iconify-icon icon="catppuccin:folder-download" class="text-3xl" />
-          <span class="text-slate-900 dark:text-slate-100">安装 <span class="text-emerald-400">{{ skillName }}</span></span>
+          <span class="text-slate-900 dark:text-slate-100">{{ t('search.modalTitle') }} <span class="text-emerald-400">{{ skillName }}</span></span>
           <span class="rounded border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2 py-1 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
-            {{ global ? '全局' : '本地' }}
+            {{ global ? t('search.globalScope') : t('search.localScope') }}
           </span>
         </h3>
         <button
@@ -67,13 +70,13 @@ function selectVisibleAgents(): void {
 
       <div class="flex flex-col gap-5 overflow-hidden p-6">
         <div>
-          <label class="mb-2 block text-sm font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400" for="install-agent-filter-input">选择目标 Agent</label>
+          <label class="mb-2 block text-sm font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400" for="install-agent-filter-input">{{ t('search.targetAgent') }}</label>
           <div class="relative">
             <iconify-icon icon="catppuccin:search" class="absolute left-3 top-3 text-lg text-slate-400 dark:text-slate-500 dark:text-slate-400" />
             <input
               id="install-agent-filter-input"
               :value="filter"
-              placeholder="搜索过滤..."
+              :placeholder="t('search.filterPlaceholder')"
               class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-200/50 dark:bg-slate-800/50 py-2.5 pl-10 pr-4 text-slate-800 dark:text-slate-200 placeholder-slate-500 transition-all focus:border-emerald-500/50 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
               @input="emit('update:filter', ($event.target as HTMLInputElement).value)"
             >
@@ -108,18 +111,18 @@ function selectVisibleAgents(): void {
             </span>
           </label>
           <div v-if="filteredAgents.length === 0" class="py-10 text-center text-slate-400 dark:text-slate-500">
-            无匹配的 Agent
+            {{ t('search.noMatchedAgents') }}
           </div>
         </div>
 
         <div class="flex items-center justify-between text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
-          <span>已选择 <strong class="text-emerald-400">{{ selectedAgents.length }}</strong> 个 Agent</span>
+          <span>{{ t('search.selectedAgents', { count: selectedAgents.length }) }}</span>
           <div class="space-x-3">
             <button id="install-select-visible-button" type="button" class="text-emerald-400 hover:text-emerald-300" @click="selectVisibleAgents">
-              全选当前
+              {{ t('search.selectVisible') }}
             </button>
             <button id="install-clear-selection-button" type="button" class="text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300" @click="emit('update:selectedAgents', [])">
-              清空
+              {{ t('search.clearSelection') }}
             </button>
           </div>
         </div>
@@ -133,7 +136,7 @@ function selectVisibleAgents(): void {
           class="rounded-xl px-6 py-2.5 font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-700 hover:text-white disabled:opacity-50"
           @click="emit('close')"
         >
-          取消
+          {{ t('common.cancel') }}
         </button>
         <button
           id="install-confirm-button"
@@ -143,7 +146,7 @@ function selectVisibleAgents(): void {
           @click="emit('install')"
         >
           <span v-if="installing" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-          <span>{{ installing ? '安装中...' : '确认安装' }}</span>
+          <span>{{ installing ? t('search.installing') : t('search.confirmInstall') }}</span>
         </button>
       </div>
     </div>

@@ -66,6 +66,7 @@ function toggleLanguage() {
 
         <div class="flex items-center gap-4">
           <button
+            id="app-language-toggle-button"
             type="button"
             class="flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"
             @click="toggleLanguage"
@@ -75,6 +76,7 @@ function toggleLanguage() {
           </button>
 
           <button
+            id="app-theme-toggle-button"
             type="button"
             class="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700"
             @click="toggleDark()"

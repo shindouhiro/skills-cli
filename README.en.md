@@ -55,18 +55,10 @@
 
 ## 🚀 Installation
 
-Install globally with `pnpm` (recommended):
+Install globally with `pnpm`:
 
 ```bash
 pnpm add -g @shindou/skills-cli
-```
-
-Or use `npm` / `yarn`:
-
-```bash
-npm install -g @shindou/skills-cli
-# or
-yarn global add @shindou/skills-cli
 ```
 
 Once installed, use the `skills` command to get started.
@@ -180,11 +172,12 @@ skills ui
 ```
 In the Web UI (default `http://localhost:3080`), you can:
 - **Full-screen Dashboard**: A desktop-grade interface for managing all project-local and global skills with intuitive sidebar navigation.
+- **Bilingual Themes**: Switch between Chinese / English in real time, and toggle light or dark mode from the top toolbar.
 - **Dynamic Discovery**: Real-time search across thousands of skills on [skills.sh](https://skills.sh/) with filter support and one-click local/global installation.
 - **Smart Pre-selection**: Automatically reads `defaultAgents` from `.skillsrc` for pre-selection, featuring high-fidelity local icons and detailed source tooltips.
-- **Warehouse Management**: Integrated settings panel to manage multiple Git remote targets with support for both project-level and global configuration persistence.
+- **Warehouse Management**: Integrated settings panel to display and maintain both project-level and global Git remote upload targets, with a visible scope label for each target.
 - **Config Management (Settings)**: New visual configuration editor to directly edit and save your project-local or global `.skillsrc` files.
-- **Remote Maintenance**: Browse existing skills in your remote repositories and perform remote deletions (automatic Git commit & push) directly from the UI.
+- **Remote Maintenance**: Browse skills in each upload target repository and delete remote skills through the matching project-level or global target (automatic Git commit & push) directly from the UI.
 - **Safe Operations**: Critical actions like deletion feature custom, premium confirmation modals and real-time toast notifications.
 - **Premium Aesthetics**: Fully optimized for PC with locally integrated high-fidelity AI assistant icons and smooth animations for a state-of-the-art management experience.
 

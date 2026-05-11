@@ -231,8 +231,19 @@ export async function uiCommand(options: { port?: number } = {}) {
     }
 
     if (req.method === 'GET' && pathname === '/api/targets') {
-      const config = loadConfig(cwd)
-      return jsonResponse(config.upload?.targets || [])
+      const projectConfig = loadConfigAtPath(getProjectConfigPathForWrite(cwd))
+      const globalConfig = loadConfigAtPath(getGlobalConfigPath())
+      const projectTargets = (projectConfig.upload?.targets || []).map(target => ({
+        ...target,
+        global: false,
+        scope: 'project',
+      }))
+      const globalTargets = (globalConfig.upload?.targets || []).map(target => ({
+        ...target,
+        global: true,
+        scope: 'global',
+      }))
+      return jsonResponse([...projectTargets, ...globalTargets])
     }
 
     if (req.method === 'POST' && pathname === '/api/targets') {

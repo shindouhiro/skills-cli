@@ -2,10 +2,10 @@ import type {
   AgentsResponse,
   ApiResult,
   ConfigResponse,
+  ScopedUploadTargetConfig,
   SkillSearchResult,
   SkillsResponse,
   TargetSkillsResponse,
-  UploadTargetConfig,
 } from '../types/ui'
 
 async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
@@ -39,7 +39,7 @@ export const api = {
   uninstall: (body: { name: string, global: boolean, agents: string[] }) => requestJson<ApiResult>(`/api/uninstall`, jsonBody(body)),
   upload: (body: { name: string, global: boolean }) => requestJson<ApiResult>(`/api/upload`, jsonBody(body)),
   saveConfig: (body: { path: string, content: string }) => requestJson<ApiResult>(`/api/config`, jsonBody(body)),
-  targets: () => requestJson<UploadTargetConfig[]>('/api/targets'),
+  targets: () => requestJson<ScopedUploadTargetConfig[]>('/api/targets'),
   addTarget: (body: { name: string, url: string, path: string, branch: string, global: boolean }) => requestJson<ApiResult>(`/api/targets`, jsonBody(body)),
   deleteTarget: (body: { name: string, global: boolean }) => requestJson<ApiResult>('/api/targets', {
     method: 'DELETE',

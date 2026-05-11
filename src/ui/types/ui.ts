@@ -48,4 +48,11 @@ export interface TargetSkillsState {
   error: string | null
 }
 
+export type UploadTargetScope = 'project' | 'global'
+
+export interface ScopedUploadTargetConfig extends UploadTargetConfig {
+  scope: UploadTargetScope
+  global: boolean
+}
+
 export type { AgentDefinition, InstalledSkill, SkillSearchResult, UploadTargetConfig }
