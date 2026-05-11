@@ -49,11 +49,13 @@
   },
   "dependencies": {
     "@clack/prompts": "catalog:prod",
+    "@vueuse/core": "catalog:prod",
     "cac": "catalog:prod",
     "consola": "catalog:prod",
     "ofetch": "catalog:prod",
     "picocolors": "catalog:prod",
-    "vue": "catalog:prod"
+    "vue": "catalog:prod",
+    "vue-i18n": "catalog:prod"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:dev",

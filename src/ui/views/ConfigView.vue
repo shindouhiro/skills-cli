@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ToastType } from '../types/ui'
 import { onMounted, shallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '../services/api'
 
 const props = defineProps<{
@@ -10,6 +11,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   configSaved: []
 }>()
+
+const { t } = useI18n()
 
 const configText = shallowRef('{}')
 const configPath = shallowRef('')
@@ -32,11 +35,11 @@ async function saveConfigData(): Promise<void> {
   try {
     JSON.parse(configText.value)
     const data = await api.saveConfig({ path: configPath.value, content: configText.value })
-    props.addToast(data.message || '配置保存成功', 'success')
+    props.addToast(data.message || t('config.saveSuccess'), 'success')
     emit('configSaved')
   }
   catch (err) {
-    props.addToast(err instanceof SyntaxError ? 'JSON 格式错误，请检查' : String(err), 'error')
+    props.addToast(err instanceof SyntaxError ? t('config.syntaxError') : String(err), 'error')
   }
   finally {
     isSavingConfig.value = false
@@ -57,28 +60,28 @@ onMounted(fetchConfig)
       <div class="mb-6 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <span class="h-6 w-1.5 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]" />
-          <h2 class="text-xl font-bold text-slate-100">
-            配置文件编辑器
+          <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">
+            {{ t('config.editorTitle') }}
           </h2>
 
-          <div class="ml-4 flex items-center rounded-lg border border-slate-700 bg-slate-800/80 p-1">
+          <div class="ml-4 flex items-center rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/80 p-1">
             <button
               id="config-scope-project-button"
               type="button"
               class="rounded-md px-3 py-1.5 text-xs font-medium transition-all"
-              :class="configScope === 'project' ? 'bg-amber-500/20 text-amber-400 shadow-sm' : 'text-slate-400 hover:text-slate-300'"
+              :class="configScope === 'project' ? 'bg-amber-500/20 text-amber-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'"
               @click="setScope('project')"
             >
-              项目级别
+              {{ t('config.projectScope') }}
             </button>
             <button
               id="config-scope-global-button"
               type="button"
               class="rounded-md px-3 py-1.5 text-xs font-medium transition-all"
-              :class="configScope === 'global' ? 'bg-amber-500/20 text-amber-400 shadow-sm' : 'text-slate-400 hover:text-slate-300'"
+              :class="configScope === 'global' ? 'bg-amber-500/20 text-amber-400 shadow-sm' : 'text-slate-400 dark:text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'"
               @click="setScope('global')"
             >
-              全局级别
+              {{ t('config.globalScope') }}
             </button>
           </div>
         </div>
@@ -86,11 +89,11 @@ onMounted(fetchConfig)
           <button
             id="config-reload-button"
             type="button"
-            class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-600 hover:bg-slate-700"
+            class="flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 transition-colors hover:border-slate-300 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700"
             @click="fetchConfig"
           >
             <iconify-icon icon="lucide:refresh-cw" />
-            重新加载
+            {{ t('config.reload') }}
           </button>
           <button
             id="config-save-button"
@@ -100,13 +103,13 @@ onMounted(fetchConfig)
             @click="saveConfigData"
           >
             <iconify-icon icon="lucide:save" />
-            {{ isSavingConfig ? '保存中...' : '保存配置' }}
+            {{ isSavingConfig ? t('config.saving') : t('config.saveConfig') }}
           </button>
         </div>
       </div>
 
-      <div class="glass space-y-5 rounded-2xl border border-slate-700/50 p-6">
-        <div class="flex items-center gap-3 rounded-xl border border-slate-700/30 bg-slate-800/50 px-4 py-3 text-sm text-slate-400">
+      <div class="glass space-y-5 rounded-2xl border border-slate-200 dark:border-slate-700/50 p-6">
+        <div class="flex items-center gap-3 rounded-xl border border-slate-300 dark:border-slate-700/30 bg-slate-200/50 dark:bg-slate-800/50 px-4 py-3 text-sm text-slate-400 dark:text-slate-500 dark:text-slate-400">
           <iconify-icon icon="lucide:file-json" class="shrink-0 text-lg text-amber-400" />
           <span class="truncate font-mono">{{ configPath }}</span>
         </div>
@@ -114,11 +117,11 @@ onMounted(fetchConfig)
           id="config-editor-textarea"
           v-model="configText"
           spellcheck="false"
-          class="custom-scroll min-h-[400px] w-full resize-y rounded-xl border border-slate-700 bg-slate-950/80 px-5 py-4 font-mono text-sm leading-relaxed text-emerald-300 transition-all [tab-size:2] focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+          class="custom-scroll min-h-[400px] w-full resize-y rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-950/80 px-5 py-4 font-mono text-sm leading-relaxed text-emerald-300 transition-all [tab-size:2] focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
         />
-        <div class="flex items-center gap-2 text-xs text-slate-500">
+        <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
           <iconify-icon icon="lucide:info" class="text-base" />
-          <span>编辑后点击「保存配置」生效，支持 defaultAgents、sources、installMode、scope、upload 等字段</span>
+          <span>{{ t('config.infoText') }}</span>
         </div>
       </div>
     </section>

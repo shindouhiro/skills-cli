@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AgentDefinition, SkillSearchResult, ToastType } from '../types/ui'
 import { computed, reactive, ref, shallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InstallModal from '../components/InstallModal.vue'
 import { api } from '../services/api'
 
@@ -13,6 +14,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   installed: []
 }>()
+
+const { t } = useI18n()
 
 const keyword = shallowRef('')
 const searchResults = ref<SkillSearchResult[]>([])
@@ -56,7 +59,7 @@ function openInstallModal(name: string, global: boolean): void {
 
 async function confirmInstall(): Promise<void> {
   if (selectedAgents.value.length === 0) {
-    props.addToast('请至少选择一个 Agent', 'warning')
+    props.addToast(t('search.noAgents'), 'warning')
     return
   }
 
@@ -67,7 +70,7 @@ async function confirmInstall(): Promise<void> {
       global: installData.global,
       agents: selectedAgents.value,
     })
-    props.addToast('安装操作已完成', 'success')
+    props.addToast(t('search.installSuccess'), 'success')
     showInstallModal.value = false
     emit('installed')
   }
@@ -82,13 +85,13 @@ async function confirmInstall(): Promise<void> {
 
 <template>
   <div class="animate-fade-in w-full pb-10">
-    <div class="glass mx-auto mb-10 flex w-full max-w-5xl items-center gap-3 rounded-2xl border border-slate-700/50 p-2 shadow-lg shadow-black/20 transition-all focus-within:ring-2 focus-within:ring-emerald-500/50">
+    <div class="glass mx-auto mb-10 flex w-full max-w-5xl items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-700/50 p-2 shadow-lg shadow-black/20 transition-all focus-within:ring-2 focus-within:ring-emerald-500/50">
       <iconify-icon icon="catppuccin:search" class="pl-5 text-3xl opacity-80" />
       <input
         id="skill-search-input"
         v-model="keyword"
-        placeholder="输入名称或关键字搜索 skills..."
-        class="flex-1 border-none bg-transparent px-2 py-4 text-lg text-slate-200 placeholder-slate-500 focus:outline-none"
+        :placeholder="t('search.inputPlaceholder')"
+        class="flex-1 border-none bg-transparent px-2 py-4 text-lg text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:outline-none"
         @keyup.enter="search"
       >
       <button
@@ -98,14 +101,14 @@ async function confirmInstall(): Promise<void> {
         class="rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 px-10 py-4 text-lg font-bold text-slate-900 shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-400 hover:to-emerald-300 disabled:opacity-50"
         @click="search"
       >
-        搜 索
+        {{ t('search.button') }}
       </button>
     </div>
 
     <div v-if="isSearching" class="animate-pulse py-32 text-center">
       <div class="mx-auto mb-6 h-16 w-16 animate-spin rounded-full border-4 border-emerald-500/20 border-t-emerald-500" />
       <div class="text-lg font-medium tracking-widest text-emerald-400">
-        SEARCHING...
+        {{ t('search.searching') }}
       </div>
     </div>
 
@@ -114,33 +117,33 @@ async function confirmInstall(): Promise<void> {
         v-for="skill in searchResults"
         :id="`search-result-card-${skill.name}`"
         :key="skill.name"
-        class="glass group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-700/50 p-6 transition-all duration-300 hover:border-emerald-500/30"
+        class="glass group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/50 p-6 transition-all duration-300 hover:border-emerald-500/30"
       >
         <div class="mb-3 flex min-w-0 items-start justify-between">
           <h3 class="min-w-0 truncate pr-4 text-xl font-bold text-emerald-300">
             {{ skill.name }}
           </h3>
           <div class="group/src relative shrink-0">
-            <span class="block max-w-[140px] truncate rounded-md border border-slate-700/50 bg-slate-800/80 px-2.5 py-1 font-mono text-xs text-slate-400">
+            <span class="block max-w-[140px] truncate rounded-md border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 font-mono text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">
               {{ skill.source }}
             </span>
-            <div class="pointer-events-none absolute right-0 top-full z-30 mt-1.5 whitespace-nowrap rounded-lg border border-slate-600 bg-slate-900/95 px-3 py-1.5 text-xs text-slate-200 opacity-0 shadow-2xl backdrop-blur-sm transition-opacity duration-200 group-hover/src:opacity-100">
+            <div class="pointer-events-none absolute right-0 top-full z-30 mt-1.5 whitespace-nowrap rounded-lg border border-slate-300 dark:border-slate-600 bg-white/95 dark:bg-slate-900/95 px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 opacity-0 shadow-2xl backdrop-blur-sm transition-opacity duration-200 group-hover/src:opacity-100">
               {{ skill.source }}
             </div>
           </div>
         </div>
-        <p class="mb-6 line-clamp-3 flex-1 text-sm leading-relaxed text-slate-400">
+        <p class="mb-6 line-clamp-3 flex-1 text-sm leading-relaxed text-slate-400 dark:text-slate-500 dark:text-slate-400">
           {{ skill.description }}
         </p>
-        <div class="mt-auto flex justify-end gap-2 border-t border-slate-800 pt-4">
+        <div class="mt-auto flex justify-end gap-2 border-t border-slate-200 dark:border-slate-800 pt-4">
           <button
             :id="`install-local-button-${skill.name}`"
             type="button"
-            class="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-300 transition-all hover:border-slate-600 hover:bg-slate-700"
+            class="flex items-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 transition-all hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700"
             @click="openInstallModal(skill.name, false)"
           >
             <iconify-icon icon="lucide:folder-down" class="text-base" />
-            <span>本地</span>
+            <span>{{ t('search.installLocal') }}</span>
           </button>
           <button
             :id="`install-global-button-${skill.name}`"
@@ -149,7 +152,7 @@ async function confirmInstall(): Promise<void> {
             @click="openInstallModal(skill.name, true)"
           >
             <iconify-icon icon="lucide:earth" class="text-base" />
-            <span>全局</span>
+            <span>{{ t('search.installGlobal') }}</span>
           </button>
         </div>
       </div>
@@ -157,15 +160,15 @@ async function confirmInstall(): Promise<void> {
 
     <div v-else-if="keyword && !isSearching" class="flex flex-col items-center py-32 text-center">
       <iconify-icon icon="catppuccin:astro" class="mb-6 text-7xl opacity-80" />
-      <div class="text-xl font-medium text-slate-400">
-        在茫茫宇宙中没有找到匹配的 Skills
+      <div class="text-xl font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
+        {{ t('search.notFound') }}
       </div>
     </div>
 
     <div v-else class="flex flex-col items-center py-32 text-center">
       <iconify-icon icon="catppuccin:rocket" class="mb-6 text-7xl opacity-80" />
-      <div class="text-xl font-medium text-slate-400">
-        输入关键字，探索无尽的 AI 潜能
+      <div class="text-xl font-medium text-slate-400 dark:text-slate-500 dark:text-slate-400">
+        {{ t('search.explore') }}
       </div>
     </div>
 

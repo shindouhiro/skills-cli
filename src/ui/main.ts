@@ -1,6 +1,8 @@
 import { createApp } from 'vue'
 import AI_ICONS from '../commands/icons.json'
 import App from './App.vue'
+import { i18n } from './i18n'
+
 import './styles.css'
 
 declare global {
@@ -40,4 +42,4 @@ function registerAiIcons(): void {
 }
 
 registerAiIcons()
-createApp(App).mount('#app')
+createApp(App).use(i18n).mount('#app')

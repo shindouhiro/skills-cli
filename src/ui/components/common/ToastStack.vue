@@ -28,7 +28,7 @@ function toastClass(type: ToastMessage['type']): string {
       v-for="toast in toasts"
       :id="`toast-${toast.id}`"
       :key="toast.id"
-      class="glass animate-fade-in pointer-events-auto flex items-center gap-3 rounded-full border border-slate-700/50 px-6 py-3 shadow-2xl"
+      class="glass animate-fade-in pointer-events-auto flex items-center gap-3 rounded-full border border-slate-200 dark:border-slate-700/50 px-6 py-3 shadow-2xl"
       :class="toastClass(toast.type)"
     >
       <iconify-icon :icon="toastIcon(toast.type)" class="text-xl" />

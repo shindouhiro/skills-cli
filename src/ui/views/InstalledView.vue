@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { AgentDefinition, ConfirmType, InstalledSkill, ToastType } from '../types/ui'
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import AgentIcon from '../components/common/AgentIcon.vue'
 import { api } from '../services/api'
 
@@ -9,6 +10,8 @@ const props = defineProps<{
   addToast: (message: string, type?: ToastType) => void
   openConfirm: (title: string, message: string, type: ConfirmType, onConfirm: () => void | Promise<void>) => void
 }>()
+
+const { t } = useI18n()
 
 /**
  * 判断 skill 是否来自额外全局路径（如 ~/.agents/skills/）
@@ -74,8 +77,8 @@ const sections = computed<SkillSection[]>(() => {
   return [
     {
       key: 'local',
-      title: '本地项目 Skills',
-      emptyText: '当前项目未安装任何 Skills',
+      title: t('installed.localTitle'),
+      emptyText: t('installed.localEmpty'),
       accentClass: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10 shadow-emerald-500/5',
       glowClass: 'bg-emerald-500 shadow-[0_0_10px_#10b981]',
       scopeGlobal: false,
@@ -84,8 +87,8 @@ const sections = computed<SkillSection[]>(() => {
     },
     {
       key: 'global',
-      title: '全局用户 Skills',
-      emptyText: '系统全局未安装任何 Skills',
+      title: t('installed.globalTitle'),
+      emptyText: t('installed.globalEmpty'),
       accentClass: 'text-cyan-400 border-cyan-500/20 bg-cyan-500/10 shadow-cyan-500/5',
       glowClass: 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]',
       scopeGlobal: true,
@@ -115,10 +118,10 @@ function getAgent(agentId: string): AgentDefinition | undefined {
 }
 
 function uninstallSkill(name: string, agentId: string, global: boolean): void {
-  props.openConfirm('确认卸载', `确定要从 ${agentId} 中卸载 Skill: ${name} 吗？此操作不可逆。`, 'danger', async () => {
+  props.openConfirm(t('common.confirm'), t('installed.uninstallConfirm', { name, agent: agentId }), 'danger', async () => {
     try {
       await api.uninstall({ name, global, agents: [agentId] })
-      props.addToast('卸载成功', 'success')
+      props.addToast(t('common.success'), 'success')
       await fetchSkills()
     }
     catch (err) {
@@ -128,11 +131,11 @@ function uninstallSkill(name: string, agentId: string, global: boolean): void {
 }
 
 function uploadSkill(name: string, global: boolean): void {
-  props.openConfirm('确认上传', `即将上传 Skill: ${name} 到配置的 Git 远端，是否继续？`, 'info', async () => {
-    props.addToast('正在准备上传...', 'warning')
+  props.openConfirm(t('common.confirm'), t('installed.uploadConfirm', { name }), 'info', async () => {
+    props.addToast(t('installed.uploading'), 'warning')
     try {
       const data = await api.upload({ name, global })
-      props.addToast(data.message || '上传成功', 'success')
+      props.addToast(data.message || t('common.success'), 'success')
     }
     catch (err) {
       props.addToast(String(err), 'error')
@@ -160,8 +163,8 @@ function handleClickOutside(event: MouseEvent) {
 
 const selectedAgentName = computed(() => {
   if (selectedAgentId.value === 'all')
-    return '显示全部 (All)'
-  return availableAgents.value.find(a => a.id === selectedAgentId.value)?.name || '未知'
+    return t('common.showAll')
+  return availableAgents.value.find(a => a.id === selectedAgentId.value)?.name || 'Unknown'
 })
 
 onMounted(() => {
@@ -176,49 +179,49 @@ onUnmounted(() => {
 
 <template>
   <div class="animate-fade-in w-full space-y-12 pb-10">
-    <div v-if="isLoading" class="py-28 text-center text-slate-400">
-      <iconify-icon icon="lucide:loader-2" class="mb-3 text-4xl text-emerald-400/70 animate-spin" />
-      <div>正在读取已安装 Skills...</div>
+    <div v-if="isLoading" class="py-28 text-center text-slate-500 dark:text-slate-400">
+      <iconify-icon icon="lucide:loader-2" class="mb-3 text-4xl text-emerald-500 dark:text-emerald-400/70 animate-spin" />
+      <div>{{ t('common.loading') }}</div>
     </div>
 
     <template v-else>
       <div v-if="availableAgents.length > 0" class="mb-2 flex items-center justify-start">
         <div ref="filterRef" class="relative">
           <button
-            class="flex items-center gap-2 rounded-xl border border-slate-700/50 bg-slate-800/30 p-1 pr-3 shadow-sm transition-colors hover:border-slate-600/50 outline-none focus:border-emerald-500/50"
+            class="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/30 p-1 pr-3 shadow-sm transition-colors hover:border-slate-300 dark:hover:border-slate-600/50 outline-none focus:border-emerald-500/50"
             @click="toggleFilter"
           >
-            <div class="flex items-center gap-1.5 pl-2.5 pr-1 text-slate-400">
+            <div class="flex items-center gap-1.5 pl-2.5 pr-1 text-slate-400 dark:text-slate-500 dark:text-slate-400">
               <iconify-icon icon="lucide:list-filter" class="text-sm" />
-              <span class="text-sm font-medium">筛选助手</span>
+              <span class="text-sm font-medium">{{ t('common.filterAgents') }}</span>
             </div>
-            <div class="h-4 w-px bg-slate-700/50" />
+            <div class="h-4 w-px bg-slate-200/80 dark:bg-slate-700/50" />
             <div class="flex items-center gap-1.5 pl-1">
               <span class="text-sm font-medium text-emerald-400">{{ selectedAgentName }}</span>
-              <iconify-icon icon="lucide:chevron-down" class="text-xs text-slate-400 transition-transform duration-200" :class="{ 'rotate-180': isFilterOpen }" />
+              <iconify-icon icon="lucide:chevron-down" class="text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400 transition-transform duration-200" :class="{ 'rotate-180': isFilterOpen }" />
             </div>
           </button>
 
           <!-- Dropdown Menu -->
           <div
             v-if="isFilterOpen"
-            class="absolute left-0 top-full z-50 mt-2 w-64 animate-fade-in rounded-xl border border-slate-700/50 bg-slate-800/95 p-1.5 shadow-xl backdrop-blur-md"
+            class="absolute left-0 top-full z-50 mt-2 w-64 animate-fade-in rounded-xl border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800/95 p-1.5 shadow-xl backdrop-blur-md"
           >
             <button
-              class="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-700/50"
-              :class="selectedAgentId === 'all' ? 'text-emerald-400 font-medium bg-emerald-500/10' : 'text-slate-300'"
+              class="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-200/80 dark:bg-slate-700/50"
+              :class="selectedAgentId === 'all' ? 'text-emerald-400 font-medium bg-emerald-500/10' : 'text-slate-700 dark:text-slate-300'"
               @click="selectAgent('all')"
             >
               <iconify-icon icon="lucide:check" class="text-base" :class="selectedAgentId === 'all' ? 'opacity-100' : 'opacity-0'" />
-              显示全部 (All)
+              {{ t('common.showAll') }}
             </button>
-            <div class="my-1 h-px w-full bg-slate-700/50" />
+            <div class="my-1 h-px w-full bg-slate-200/80 dark:bg-slate-700/50" />
             <div class="max-h-64 overflow-y-auto pr-1 custom-scrollbar">
               <button
                 v-for="agent in availableAgents"
                 :key="agent.id"
-                class="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-700/50"
-                :class="selectedAgentId === agent.id ? 'text-emerald-400 font-medium bg-emerald-500/10' : 'text-slate-300'"
+                class="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-200/80 dark:bg-slate-700/50"
+                :class="selectedAgentId === agent.id ? 'text-emerald-400 font-medium bg-emerald-500/10' : 'text-slate-700 dark:text-slate-300'"
                 @click="selectAgent(agent.id)"
               >
                 <iconify-icon icon="lucide:check" class="shrink-0 text-base" :class="selectedAgentId === agent.id ? 'opacity-100' : 'opacity-0'" />
@@ -233,12 +236,12 @@ onUnmounted(() => {
       <section v-for="section in sections" :key="section.key">
         <div class="mb-6 flex items-center gap-3">
           <span class="h-6 w-1.5 rounded-full" :class="section.glowClass" />
-          <h2 class="text-xl font-bold text-slate-100">
+          <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">
             {{ section.title }}
           </h2>
         </div>
 
-        <div v-if="section.entries.length === 0" class="glass flex flex-col items-center rounded-2xl border-2 border-dashed border-slate-800 p-16 text-center text-slate-400">
+        <div v-if="section.entries.length === 0" class="glass flex flex-col items-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-16 text-center text-slate-400 dark:text-slate-500 dark:text-slate-400">
           <iconify-icon :icon="section.icon" class="mb-4 text-6xl opacity-80" />
           <div>{{ section.emptyText }}</div>
         </div>
@@ -248,7 +251,7 @@ onUnmounted(() => {
           v-else
           :id="`installed-agent-section-${section.key}-${agentId}`"
           :key="agentId"
-          class="mb-8 rounded-2xl border border-slate-800 bg-slate-800/20 p-6"
+          class="mb-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-800/20 p-6"
         >
           <h3 class="mb-6 flex flex-wrap items-center gap-2 text-lg font-medium">
             <div class="flex items-center gap-2.5 rounded-xl border px-3 py-1.5 shadow-sm" :class="section.accentClass">
@@ -260,7 +263,7 @@ onUnmounted(() => {
               class="flex items-center gap-1.5 rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1 text-xs text-violet-400"
             >
               <iconify-icon icon="lucide:folder-tree" class="text-sm" />
-              <span>{{ 1 + (getAgent(agentId)?.extraGlobalDirs?.length || 0) }} 个发现路径</span>
+              <span>{{ t('installed.discoveryPaths', { count: 1 + (getAgent(agentId)?.extraGlobalDirs?.length || 0) }) }}</span>
             </div>
           </h3>
 
@@ -272,16 +275,16 @@ onUnmounted(() => {
               class="glass group relative flex min-h-[180px] flex-col rounded-2xl border p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               :class="skill.broken
                 ? 'border-red-500/40 hover:border-red-500/60 hover:shadow-red-500/10 opacity-70'
-                : 'border-slate-700/50 hover:border-emerald-500/30 hover:shadow-emerald-500/10'"
+                : 'border-slate-200 dark:border-slate-700/50 hover:border-emerald-500/30 hover:shadow-emerald-500/10'"
             >
               <h4 class="flex items-start justify-between text-lg font-bold">
-                <span class="truncate pr-2 text-slate-200">{{ skill.name }}</span>
+                <span class="truncate pr-2 text-slate-800 dark:text-slate-200">{{ skill.name }}</span>
                 <div class="flex shrink-0 items-center gap-1.5">
                   <span v-if="skill.broken" class="flex items-center gap-1 whitespace-nowrap rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1 font-mono text-xs text-red-400">
                     <iconify-icon icon="lucide:link-2-off" class="text-sm" />
-                    断裂
+                    {{ t('installed.broken') }}
                   </span>
-                  <span v-else-if="skill.meta?.version" class="whitespace-nowrap rounded-md border border-slate-700 bg-slate-800 px-2 py-1 font-mono text-xs text-emerald-400">
+                  <span v-else-if="skill.meta?.version" class="whitespace-nowrap rounded-md border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-2 py-1 font-mono text-xs text-emerald-400">
                     v{{ skill.meta.version }}
                   </span>
                 </div>
@@ -297,22 +300,22 @@ onUnmounted(() => {
               <div class="group/desc relative mt-3 flex-1">
                 <p v-if="skill.broken" class="text-sm leading-relaxed text-red-400/80">
                   <iconify-icon icon="lucide:alert-triangle" class="mr-1 align-text-top text-base" />
-                  符号链接目标不存在，请修复或卸载
+                  {{ t('installed.brokenDesc') }}
                 </p>
                 <template v-else>
-                  <p class="line-clamp-2 text-sm leading-relaxed text-slate-400">
-                    {{ skill.meta?.description || '无描述信息' }}
+                  <p class="line-clamp-2 text-sm leading-relaxed text-slate-400 dark:text-slate-500 dark:text-slate-400">
+                    {{ skill.meta?.description || t('installed.noDesc') }}
                   </p>
                   <div
                     v-if="skill.meta?.description && skill.meta.description.length > 40"
-                    class="pointer-events-none absolute bottom-full left-0 z-30 mb-2 w-72 whitespace-normal rounded-xl border border-slate-600 bg-slate-900/95 px-4 py-3 text-xs leading-relaxed text-slate-200 opacity-0 shadow-2xl backdrop-blur-sm transition-opacity duration-200 group-hover/desc:opacity-100"
+                    class="pointer-events-none absolute bottom-full left-0 z-30 mb-2 w-72 whitespace-normal rounded-xl border border-slate-300 dark:border-slate-600 bg-white/95 dark:bg-slate-900/95 px-4 py-3 text-xs leading-relaxed text-slate-800 dark:text-slate-200 opacity-0 shadow-2xl backdrop-blur-sm transition-opacity duration-200 group-hover/desc:opacity-100"
                   >
                     {{ skill.meta.description }}
                   </div>
                 </template>
               </div>
 
-              <div class="mt-auto flex justify-end gap-2 border-t border-slate-800 pt-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <div class="mt-auto flex justify-end gap-2 border-t border-slate-200 dark:border-slate-800 pt-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                 <button
                   v-if="!skill.broken"
                   :id="`installed-upload-button-${section.key}-${agentId}-${skill.name}`"
@@ -321,8 +324,8 @@ onUnmounted(() => {
                   @click="uploadSkill(skill.name, section.scopeGlobal)"
                 >
                   <iconify-icon icon="lucide:upload-cloud" class="text-lg" />
-                  <div class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-slate-700/50 bg-slate-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/btn:opacity-100">
-                    上传至仓库
+                  <div class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-900 dark:text-white opacity-0 shadow-lg transition-opacity group-hover/btn:opacity-100">
+                    {{ t('installed.upload') }}
                   </div>
                 </button>
                 <button
@@ -332,8 +335,8 @@ onUnmounted(() => {
                   @click="uninstallSkill(skill.name, agentId, section.scopeGlobal)"
                 >
                   <iconify-icon icon="lucide:trash-2" class="text-lg" />
-                  <div class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-slate-700/50 bg-slate-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover/btn:opacity-100">
-                    卸载
+                  <div class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-slate-200 dark:border-slate-700/50 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs font-medium text-slate-900 dark:text-white opacity-0 shadow-lg transition-opacity group-hover/btn:opacity-100">
+                    {{ t('installed.uninstall') }}
                   </div>
                 </button>
               </div>

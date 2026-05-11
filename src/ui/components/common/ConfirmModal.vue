@@ -15,9 +15,9 @@ const emit = defineEmits<{
   <div
     v-if="state.show"
     id="confirm-modal"
-    class="animate-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/80 p-4 backdrop-blur-sm"
+    class="animate-fade-in fixed inset-0 z-[60] flex items-center justify-center bg-white dark:bg-slate-900/80 p-4 backdrop-blur-sm"
   >
-    <div class="flex w-[400px] max-w-full flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl">
+    <div class="flex w-[400px] max-w-full flex-col overflow-hidden rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl">
       <div class="p-6">
         <h3
           class="mb-4 flex items-center gap-3 text-xl font-bold"
@@ -26,16 +26,16 @@ const emit = defineEmits<{
           <iconify-icon :icon="state.type === 'danger' ? 'lucide:alert-triangle' : 'lucide:info'" class="text-3xl" />
           {{ state.title }}
         </h3>
-        <p class="leading-relaxed text-slate-300">
+        <p class="leading-relaxed text-slate-700 dark:text-slate-300">
           {{ state.message }}
         </p>
       </div>
 
-      <div class="flex justify-end gap-3 border-t border-slate-800 bg-slate-800/30 px-6 py-4">
+      <div class="flex justify-end gap-3 border-t border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/30 px-6 py-4">
         <button
           id="confirm-modal-cancel-button"
           type="button"
-          class="rounded-xl px-6 py-2 font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+          class="rounded-xl px-6 py-2 font-medium text-slate-700 dark:text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
           @click="emit('close')"
         >
           取消
