@@ -285,7 +285,7 @@ describe('upload', () => {
 // ───────────────────────────────────────────
 describe('agents', () => {
   it('antigravity 全局 skills 路径使用官方目录', () => {
-    expect(getAgentById('antigravity')?.globalDir).toBe('~/.gemini/antigravity/skills/')
+    expect(getAgentById('antigravity')?.globalDir).toBe('~/.gemini/config/skills/')
   })
 })
 
